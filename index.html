@@ -6,7 +6,6 @@
     <title>Secret Gallery</title>
 
     <script>
-        // パスワードの設定
         const password = "0101"; 
         let input = prompt("4桁の数字パスワードを入力してください");
 
@@ -23,82 +22,90 @@
             padding: 0;
             text-align: center;
             font-family: sans-serif;
-            /* 背景画像の設定 */
             background-image: url("background.png");
             background-size: cover;
             background-attachment: fixed;
             background-position: center;
             background-repeat: no-repeat;
-            background-color: #333; /* 画像がない時の予備色 */
+            background-color: #333;
             color: #ffffff;
+            /* タップ時の青い枠を消す（スマホ用） */
+            -webkit-tap-highlight-color: transparent;
         }
 
         h1 {
-            background-color: rgba(255, 255, 255, 0.8); /* 文字を読みやすく白背景を少し入れる */
+            background-color: rgba(0, 0, 0, 0.6); 
             color: #7FFF00;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 20px;
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
             border-bottom: 3px solid #7FFF00;
         }
 
-        /* --- ギャラリー（一覧）の設定 --- */
+        /* --- ギャラリー（レスポンシブ設定） --- */
         .gallery {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-            gap: 15px;
-            padding: 20px;
+            display: grid;
+            /* 通常（PC）は 200px の画像が並ぶ。スマホでは自動で2列（1fr 1fr）になるよう調整 */
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* スマホ（画面幅 600px 以下）のときは強制的に2列にする */
+        @media (max-width: 600px) {
+            .gallery {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         .expandable {
-            width: 200px;
-            height: 200px;
-            object-fit: cover; /* 一覧では正方形に切り抜き */
+            width: 100%;
+            /* 縦横比を1:1（正方形）に固定 */
+            aspect-ratio: 1 / 1;
+            object-fit: cover; 
             cursor: pointer;
-            border: 5px solid white;
+            border: 3px solid white;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             transition: transform 0.2s;
+            box-sizing: border-box;
+            border-radius: 4px;
         }
 
         .expandable:hover {
-            transform: scale(1.05); /* ホバー時に少し大きく */
+            transform: scale(1.02);
         }
 
-        /* --- 拡大モーダルの設定（ここが重要！） --- */
+        /* --- 拡大モーダル --- */
         .modal {
-            display: none; /* 最初は隠す */
+            display: none;
             position: fixed;
-            z-index: 999;
+            z-index: 9999;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.9); /* 背景をしっかり暗く */
-            
-            /* 中身を上下左右中央に配置 */
-            display: none; 
+            background-color: rgba(0,0,0,0.95);
             align-items: center;
             justify-content: center;
         }
 
-        /* モーダル内の中身（画像・動画） */
         .modal-content {
-            /* 画面内に必ず収める設定 */
-            max-width: 90vw;  /* 画面幅の90%まで */
-            max-height: 90vh; /* 画面高さの90%まで */
+            /* 画面内に収める（スマホの縦長・横長どちらにも対応） */
+            max-width: 95vw;
+            max-height: 85vh;
             width: auto;
             height: auto;
-            object-fit: contain; /* 比率を維持して全体表示 */
+            object-fit: contain;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
         .close {
             position: absolute;
-            top: 20px; right: 35px;
+            top: 10px; right: 20px;
             color: white; font-size: 50px; font-weight: bold;
             cursor: pointer;
-            z-index: 1000;
+            z-index: 10000;
+            padding: 10px; /* タップしやすくする */
         }
 
-        /* JSで表示する時に使うクラス */
         .show { display: flex !important; }
     </style>
 </head>
@@ -128,17 +135,16 @@
 
 <div id="modal" class="modal">
     <span class="close">&times;</span>
-    <div id="modal-content-wrapper"></div>
+    <div id="modal-content-wrapper" style="display:contents;"></div>
 </div>
 
 <script>
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
 
-    // 全ての画像・動画にクリックイベントを設定
     document.querySelectorAll(".expandable").forEach(el => {
         el.onclick = function() {
-            modal.classList.add("show"); // モーダルを表示
+            modal.classList.add("show");
             wrapper.innerHTML = ""; 
 
             if (this.tagName === "IMG") {
@@ -149,10 +155,9 @@
         }
     });
 
-    // 閉じる処理
     modal.onclick = function() {
         modal.classList.remove("show");
-        wrapper.innerHTML = ""; // 動画が鳴り続けないように空にする
+        wrapper.innerHTML = "";
     }
 </script>
 
