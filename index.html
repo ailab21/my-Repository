@@ -22,7 +22,7 @@
             padding: 0;
             text-align: center;
             font-family: sans-serif;
-            background-image: url("background.png"); /* 背景も軽量化したWebP等を推奨 */
+            background-image: url("background.png"); 
             background-size: cover;
             background-attachment: fixed;
             background-position: center;
@@ -44,23 +44,18 @@
         /* --- ギャラリー（中央配置設定） --- */
         .gallery {
             display: grid;
-            /* 基本設定：150px以上の画像を並べる */
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 10px;
             padding: 10px;
-            
-            /* 中央に寄せるための重要設定 */
             justify-content: center; 
             margin: 0 auto;
-            max-width: 1200px; /* PCでの広がりすぎ防止 */
+            max-width: 1200px;
         }
 
-        /* スマホ（画面幅 600px 以下）の設定 */
         @media (max-width: 600px) {
             .gallery {
-                /* スマホではきっちり2列にして、左右の余白を均等にする */
                 grid-template-columns: repeat(2, 160px); 
-                justify-content: center; /* 列全体を中央に */
+                justify-content: center;
             }
         }
 
@@ -74,6 +69,7 @@
             transition: transform 0.2s;
             box-sizing: border-box;
             border-radius: 4px;
+            background-color: #000; /* 動画読み込み前の背景 */
         }
 
         .expandable:hover { transform: scale(1.02); }
@@ -116,6 +112,7 @@
 <h1>Secret Gallery</h1>
 
 <div class="gallery">
+    <!-- 画像セクション -->
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -131,9 +128,10 @@
     <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
     <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
     
-    <video src="20260316001move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
-    <video src="20260316002move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
-    <video src="20260316003move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
+    <!-- 動画セクション（autoplayとloopを削除しました） -->
+    <video src="20260316001move.mp4" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316002move.mp4" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316003move.mp4" class="expandable" muted loading="lazy" preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
@@ -154,7 +152,8 @@
                 const fullImage = this.getAttribute("data-full") || this.src;
                 wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
             } else {
-                wrapper.innerHTML = `<video src="${this.src}" class="modal-content" controls autoplay></video>`;
+                // 拡大時のみ autoplay, loop, playsinline を適用して再生
+                wrapper.innerHTML = `<video src="${this.src}" class="modal-content" controls autoplay loop playsinline></video>`;
             }
         }
     });
