@@ -10,7 +10,7 @@
         let input = prompt("4桁の数字パスワードを入力してください");
 
         if (input !== password) {
-            alert("パスワードが違います。どれかの作品に隠されてるよ!");
+            alert("パスワードが違います。どれかのwallpaper作品に隠されてるよ!");
             location.href = "https://www.pixiv.net/dashboard/works";
         }
     </script>
@@ -22,14 +22,13 @@
             padding: 0;
             text-align: center;
             font-family: sans-serif;
-            background-image: url("background.png");
+            background-image: url("background.png"); /* 背景も軽量化したWebP等を推奨 */
             background-size: cover;
             background-attachment: fixed;
             background-position: center;
             background-repeat: no-repeat;
             background-color: #333;
             color: #ffffff;
-            /* タップ時の青い枠を消す（スマホ用） */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -42,25 +41,31 @@
             border-bottom: 3px solid #7FFF00;
         }
 
-        /* --- ギャラリー（レスポンシブ設定） --- */
+        /* --- ギャラリー（中央配置設定） --- */
         .gallery {
             display: grid;
-            /* 通常（PC）は 200px の画像が並ぶ。スマホでは自動で2列（1fr 1fr）になるよう調整 */
+            /* 基本設定：150px以上の画像を並べる */
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 10px;
             padding: 10px;
+            
+            /* 中央に寄せるための重要設定 */
+            justify-content: center; 
+            margin: 0 auto;
+            max-width: 1200px; /* PCでの広がりすぎ防止 */
         }
 
-        /* スマホ（画面幅 600px 以下）のときは強制的に2列にする */
+        /* スマホ（画面幅 600px 以下）の設定 */
         @media (max-width: 600px) {
             .gallery {
-                grid-template-columns: 1fr 1fr;
+                /* スマホではきっちり2列にして、左右の余白を均等にする */
+                grid-template-columns: repeat(2, 160px); 
+                justify-content: center; /* 列全体を中央に */
             }
         }
 
         .expandable {
             width: 100%;
-            /* 縦横比を1:1（正方形）に固定 */
             aspect-ratio: 1 / 1;
             object-fit: cover; 
             cursor: pointer;
@@ -71,9 +76,7 @@
             border-radius: 4px;
         }
 
-        .expandable:hover {
-            transform: scale(1.02);
-        }
+        .expandable:hover { transform: scale(1.02); }
 
         /* --- 拡大モーダル --- */
         .modal {
@@ -88,7 +91,6 @@
         }
 
         .modal-content {
-            /* 画面内に収める（スマホの縦長・横長どちらにも対応） */
             max-width: 95vw;
             max-height: 85vh;
             width: auto;
@@ -103,7 +105,7 @@
             color: white; font-size: 50px; font-weight: bold;
             cursor: pointer;
             z-index: 10000;
-            padding: 10px; /* タップしやすくする */
+            padding: 10px;
         }
 
         .show { display: flex !important; }
@@ -114,23 +116,24 @@
 <h1>Secret Gallery</h1>
 
 <div class="gallery">
-    <img src="20260316001.png" alt="作品1" class="expandable">
-    <img src="20260316002.png" alt="作品2" class="expandable">
-    <img src="20260316003.png" alt="作品3" class="expandable">
-    <img src="20260316004.png" alt="作品4" class="expandable">
-    <img src="20260316005.png" alt="作品5" class="expandable">
-    <img src="20260316006.png" alt="作品6" class="expandable">
-    <img src="20260316007.png" alt="作品7" class="expandable">
-    <img src="20260316008.png" alt="作品8" class="expandable">
-    <img src="20260316009.png" alt="作品9" class="expandable">
-    <img src="20260316010.png" alt="作品10" class="expandable">
-    <img src="20260316011.png" alt="作品11" class="expandable">
-    <img src="20260316012.png" alt="作品12" class="expandable">
-    <img src="20260316013.png" alt="作品13" class="expandable">
-    <img src="20260316014.png" alt="作品14" class="expandable">
-    <video src="20260316001move.mp4" class="expandable" muted autoplay loop></video>
-    <video src="20260316002move.mp4" class="expandable" muted autoplay loop></video>
-    <video src="20260316003move.mp4" class="expandable" muted autoplay loop></video>
+    <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
+    <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
+    <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
+    <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
+    <img src="thumb_20260316005.jpg" data-full="20260316005.png" alt="作品5" class="expandable" loading="lazy">
+    <img src="thumb_20260316006.jpg" data-full="20260316006.png" alt="作品6" class="expandable" loading="lazy">
+    <img src="thumb_20260316007.jpg" data-full="20260316007.png" alt="作品7" class="expandable" loading="lazy">
+    <img src="thumb_20260316008.jpg" data-full="20260316008.png" alt="作品8" class="expandable" loading="lazy">
+    <img src="thumb_20260316009.jpg" data-full="20260316009.png" alt="作品9" class="expandable" loading="lazy">
+    <img src="thumb_20260316010.jpg" data-full="20260316010.png" alt="作品10" class="expandable" loading="lazy">
+    <img src="thumb_20260316011.jpg" data-full="20260316011.png" alt="作品11" class="expandable" loading="lazy">
+    <img src="thumb_20260316012.jpg" data-full="20260316012.png" alt="作品12" class="expandable" loading="lazy">
+    <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
+    <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
+    
+    <video src="20260316001move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
+    <video src="20260316002move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
+    <video src="20260316003move.mp4" class="expandable" muted autoplay loop loading="lazy" preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
@@ -148,7 +151,8 @@
             wrapper.innerHTML = ""; 
 
             if (this.tagName === "IMG") {
-                wrapper.innerHTML = `<img src="${this.src}" class="modal-content">`;
+                const fullImage = this.getAttribute("data-full") || this.src;
+                wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
             } else {
                 wrapper.innerHTML = `<video src="${this.src}" class="modal-content" controls autoplay></video>`;
             }
