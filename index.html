@@ -30,6 +30,7 @@
             background-color: #333;
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
 
         h1 {
@@ -41,7 +42,7 @@
             border-bottom: 3px solid #7FFF00;
         }
 
-        /* --- ギャラリー（中央配置設定） --- */
+        /* --- ギャラリー設定 --- */
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -59,20 +60,39 @@
             }
         }
 
+        /* 共通設定 */
         .expandable {
             width: 100%;
             aspect-ratio: 1 / 1;
             object-fit: cover; 
             cursor: pointer;
-            border: 3px solid white;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
+            transition: all 0.2s; /* 変化をスムーズに */
             box-sizing: border-box;
             border-radius: 4px;
             background-color: #000; 
         }
 
-        .expandable:hover { transform: scale(1.02); }
+        /* 画像のみのデザイン（白枠） */
+        img.expandable {
+            border: 3px solid white;
+        }
+
+        /* ★動画のみのデザイン（緑のネオン枠）★ */
+        video.expandable {
+            border: 3px solid #7FFF00;
+            box-shadow: 0 0 15px rgba(127, 255, 0, 0.5); /* ネオンのような光 */
+        }
+
+        /* ホバー時の演出（少し浮き上がる） */
+        .expandable:hover {
+            transform: scale(1.03);
+            z-index: 10;
+        }
+        
+        video.expandable:hover {
+            box-shadow: 0 0 25px rgba(127, 255, 0, 0.8);
+        }
 
         /* --- 拡大モーダル --- */
         .modal {
@@ -87,8 +107,8 @@
         }
 
         .modal-content {
-            max-width: 95vw;
-            max-height: 85vh;
+            max-width: 90vw;
+            max-height: 80vh;
             width: auto;
             height: auto;
             object-fit: contain;
@@ -100,8 +120,29 @@
             top: 10px; right: 20px;
             color: white; font-size: 50px; font-weight: bold;
             cursor: pointer;
-            z-index: 10000;
+            z-index: 10001;
             padding: 10px;
+        }
+
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 20px;
+            user-select: none;
+            z-index: 10001;
+            transition: color 0.3s;
+        }
+        .nav-btn:hover { color: #7FFF00; }
+        .prev { left: 10px; }
+        .next { right: 10px; }
+
+        @media (max-width: 600px) {
+            .nav-btn { font-size: 40px; padding: 10px; }
         }
 
         .show { display: flex !important; }
@@ -111,8 +152,9 @@
 
 <h1>Secret Gallery</h1>
 
-<div class="gallery">
+<div class="gallery" id="galleryContainer">
     <!-- 画像セクション -->
+    <!-- (中略: 画像リスト) -->
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -128,41 +170,91 @@
     <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
     <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
     <img src="thumb_20260316015.jpg" data-full="20260316015.png" alt="作品15" class="expandable" loading="lazy">
-    <!-- 動画セクション（末尾に #t=0.1 を追加） -->
+    <img src="thumb_20260316016.jpg" data-full="20260316016.png" alt="作品16" class="expandable" loading="lazy">
+    <img src="thumb_20260316017.jpg" data-full="20260316017.png" alt="作品17" class="expandable" loading="lazy">
+    <img src="thumb_20260316018.jpg" data-full="20260316018.png" alt="作品18" class="expandable" loading="lazy">
+    <img src="thumb_20260316019.jpg" data-full="20260316019.png" alt="作品19" class="expandable" loading="lazy">
+    <img src="thumb_20260316020.jpg" data-full="20260316020.png" alt="作品20" class="expandable" loading="lazy">
+    <img src="thumb_20260316021.jpg" data-full="20260316021.png" alt="作品21" class="expandable" loading="lazy">
+    <img src="thumb_20260316022.jpg" data-full="20260316022.png" alt="作品22" class="expandable" loading="lazy">
+    <img src="thumb_20260316023.jpg" data-full="20260316023.png" alt="作品23" class="expandable" loading="lazy">
+    <img src="thumb_20260316024.jpg" data-full="20260316024.png" alt="作品24" class="expandable" loading="lazy">
+    
+    <!-- 動画セクション -->
     <video src="20260316001move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316002move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316003move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
-    <span class="close">&times;</span>
+    <span class="close" id="closeBtn">&times;</span>
+    <span class="nav-btn prev" id="prevBtn">&#10094;</span>
     <div id="modal-content-wrapper" style="display:contents;"></div>
+    <span class="nav-btn next" id="nextBtn">&#10095;</span>
 </div>
 
 <script>
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
+    const items = Array.from(document.querySelectorAll(".expandable"));
+    let currentIndex = 0;
 
-    document.querySelectorAll(".expandable").forEach(el => {
-        el.onclick = function() {
+    function updateModalContent(index) {
+        currentIndex = index;
+        const target = items[currentIndex];
+        wrapper.innerHTML = ""; 
+
+        if (target.tagName === "IMG") {
+            const fullImage = target.getAttribute("data-full") || target.src;
+            wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
+        } else {
+            const videoSrc = target.src.split('#')[0];
+            wrapper.innerHTML = `<video src="${videoSrc}" class="modal-content" controls autoplay loop playsinline></video>`;
+        }
+    }
+
+    items.forEach((item, index) => {
+        item.onclick = function() {
             modal.classList.add("show");
-            wrapper.innerHTML = ""; 
-
-            if (this.tagName === "IMG") {
-                const fullImage = this.getAttribute("data-full") || this.src;
-                wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
-            } else {
-                // 再生時は #t=0.1 を除いた元のパスで再生されるように調整
-                const videoSrc = this.src.split('#')[0];
-                wrapper.innerHTML = `<video src="${videoSrc}" class="modal-content" controls autoplay loop playsinline></video>`;
-            }
+            updateModalContent(index);
         }
     });
 
-    modal.onclick = function() {
+    document.getElementById("nextBtn").onclick = (e) => {
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % items.length;
+        updateModalContent(currentIndex);
+    };
+
+    document.getElementById("prevBtn").onclick = (e) => {
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + items.length) % items.length;
+        updateModalContent(currentIndex);
+    };
+
+    document.getElementById("closeBtn").onclick = closeModal;
+    modal.onclick = function(e) {
+        if (e.target === modal) closeModal();
+    }
+
+    function closeModal() {
         modal.classList.remove("show");
         wrapper.innerHTML = "";
     }
+
+    document.onkeydown = function(e) {
+        if (!modal.classList.contains("show")) return;
+        if (e.key === "ArrowRight") document.getElementById("nextBtn").click();
+        if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
+        if (e.key === "Escape") closeModal();
+    };
 </script>
 
 </body>
