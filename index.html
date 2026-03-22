@@ -18,129 +18,97 @@
         :root {
             --neon: #7FFF00;
             --cyber-blue: #00ffff;
+            --error-red: #ff003c;
         }
 
         body {
             margin: 0; padding: 0; background-color: #0d0d0d; color: #fff;
             font-family: 'Courier New', monospace; overflow-x: hidden;
-            transition: filter 0.1s ease; /* 振動演出用 */
         }
 
-        /* 1. スキャンライン & グリッド背景 */
+        /* 背景のスキャンライン（常時表示） */
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
-                linear-gradient(90deg, rgba(127, 255, 0, 0.03) 1px, transparent 1px),
-                linear-gradient(rgba(127, 255, 0, 0.03) 1px, transparent 1px);
-            background-size: 100% 4px, 30px 30px, 30px 30px;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(127, 255, 0, 0.02) 1px, transparent 1px);
+            background-size: 100% 4px, 20px 20px;
             pointer-events: none; z-index: 100;
         }
 
         h1 {
             background: rgba(0,0,0,0.9); color: var(--neon); padding: 20px;
             margin: 0; border-bottom: 2px solid var(--neon); font-size: 1.5rem;
-            text-shadow: 0 0 10px var(--neon); position: sticky; top: 0; z-index: 500;
+            text-align: center; cursor: pointer; user-select: none;
         }
 
         .gallery {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px; padding: 15px; perspective: 1000px; /* 3. ジャイロ連動用 */
+            gap: 10px; padding: 15px;
         }
 
         .expandable {
             width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border: 1px solid rgba(127, 255, 0, 0.3); border-radius: 2px;
-            transition: transform 0.1s ease-out; /* ジャイロで動く */
-            -webkit-touch-callout: none;
+            border: 1px solid rgba(127, 255, 0, 0.3);
+            -webkit-touch-callout: none; /* 解除前は保存禁止 */
         }
 
-        /* 2. プログレスバー */
-        #loading-bar {
-            position: fixed; bottom: 0; left: 0; height: 3px;
-            background: var(--cyber-blue); width: 0%; z-index: 10005;
-            box-shadow: 0 0 10px var(--cyber-blue);
+        /* --- 強力なグリッチ演出用レイヤー --- */
+        #glitch-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 50000;
+            align-items: center; justify-content: center;
+            overflow: hidden;
         }
 
-        /* 4. 視覚的振動（グリッチ） */
-        .glitch-vibrate {
-            animation: v-shake 0.15s linear infinite;
-            filter: hue-rotate(90deg) contrast(1.5);
+        .glitch-text {
+            font-size: 2rem; color: var(--cyber-blue);
+            text-shadow: 2px 0 var(--error-red), -2px 0 var(--neon);
+            animation: text-glitch 0.1s infinite;
         }
-        @keyframes v-shake {
-            0% { transform: translate(2px, 1px); }
-            50% { transform: translate(-2px, -1px); }
+
+        @keyframes text-glitch {
+            0% { transform: skew(20deg); opacity: 0.8; }
+            50% { transform: skew(-20deg); opacity: 1; }
+            100% { transform: skew(0deg); }
+        }
+
+        /* 画面全体の揺れ演出 */
+        .vibrate-effect {
+            animation: screen-shake 0.1s infinite;
+            filter: contrast(2) hue-rotate(90deg);
+        }
+
+        @keyframes screen-shake {
+            0% { transform: translate(5px, 5px); }
+            50% { transform: translate(-5px, -5px); }
             100% { transform: translate(0); }
         }
 
-        /* モーダル */
+        /* モーダル（拡大画面） */
         .modal {
             display: none; position: fixed; z-index: 10000;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.95); align-items: center; justify-content: center;
         }
-        .modal-content { max-width: 90vw; max-height: 80vh; transition: 0.3s; }
-        
-        .nav-btn {
-            position: absolute; top: 50%; transform: translateY(-50%);
-            color: var(--neon); font-size: 40px; padding: 20px; z-index: 10010;
-        }
-        .prev { left: 0; } .next { right: 0; }
-
-        #override-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: none; z-index: 30000;
-            flex-direction: column; align-items: center; justify-content: center;
-            color: var(--cyber-blue); font-weight: bold;
-        }
+        .modal-content { max-width: 85vw; max-height: 80vh; object-fit: contain; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); color: var(--neon); font-size: 50px; padding: 20px; z-index: 10010; }
+        .prev { left: 5px; } .next { right: 5px; }
 
         .show { display: flex !important; }
     </style>
 </head>
 <body id="mainBody">
 
-<div id="loading-bar"></div>
-<div id="override-overlay">SYSTEM OVERRIDE...</div>
+<div id="glitch-overlay">
+    <div class="glitch-text">CRACKING SYSTEM...</div>
+</div>
 
 <h1 id="galleryTitle">SECRET_GALLERY_OS</h1>
 
-<div class="gallery" id="galleryContainer">
-    <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
-    <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
-    <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
-    <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
-    <img src="thumb_20260316005.jpg" data-full="20260316005.png" alt="作品5" class="expandable" loading="lazy">
-    <img src="thumb_20260316006.jpg" data-full="20260316006.png" alt="作品6" class="expandable" loading="lazy">
-    <img src="thumb_20260316007.jpg" data-full="20260316007.png" alt="作品7" class="expandable" loading="lazy">
-    <img src="thumb_20260316008.jpg" data-full="20260316008.png" alt="作品8" class="expandable" loading="lazy">
-    <img src="thumb_20260316009.jpg" data-full="20260316009.png" alt="作品9" class="expandable" loading="lazy">
-    <img src="thumb_20260316010.jpg" data-full="20260316010.png" alt="作品10" class="expandable" loading="lazy">
-    <img src="thumb_20260316011.jpg" data-full="20260316011.png" alt="作品11" class="expandable" loading="lazy">
-    <img src="thumb_20260316012.jpg" data-full="20260316012.png" alt="作品12" class="expandable" loading="lazy">
-    <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
-    <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
-    <img src="thumb_20260316015.jpg" data-full="20260316015.png" alt="作品15" class="expandable" loading="lazy">
-    <img src="thumb_20260316016.jpg" data-full="20260316016.png" alt="作品16" class="expandable" loading="lazy">
-    <img src="thumb_20260316017.jpg" data-full="20260316017.png" alt="作品17" class="expandable" loading="lazy">
-    <img src="thumb_20260316018.jpg" data-full="20260316018.png" alt="作品18" class="expandable" loading="lazy">
-    <img src="thumb_20260316019.jpg" data-full="20260316019.png" alt="作品19" class="expandable" loading="lazy">
-    <img src="thumb_20260316020.jpg" data-full="20260316020.png" alt="作品20" class="expandable" loading="lazy">
-    <img src="thumb_20260316021.jpg" data-full="20260316021.png" alt="作品21" class="expandable" loading="lazy">
-    <img src="thumb_20260316022.jpg" data-full="20260316022.png" alt="作品22" class="expandable" loading="lazy">
-    <img src="thumb_20260316023.jpg" data-full="20260316023.png" alt="作品23" class="expandable" loading="lazy">
-    <img src="thumb_20260316024.jpg" data-full="20260316024.png" alt="作品24" class="expandable" loading="lazy">
-    
-    <!-- 動画セクション -->
-    <video src="20260316001move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316002move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316003move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+<div class="gallery">
+    <!-- 画像・動画リスト（必要分追加してください） -->
+    <img src="thumb_20260316001.jpg" data-full="20260316001.png" class="expandable">
+    <video src="20260316001move.mp4#t=0.1" class="expandable" muted loop playsinline></video>
 </div>
 
 <div id="modal" class="modal">
@@ -150,96 +118,45 @@
 </div>
 
 <script>
+    const title = document.getElementById("galleryTitle");
+    const overlay = document.getElementById("glitch-overlay");
+    const body = document.getElementById("mainBody");
     const items = document.querySelectorAll(".expandable");
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
-    const loaderBar = document.getElementById("loading-bar");
-    const body = document.getElementById("mainBody");
+
     let adminMode = false;
     let tapCount = 0;
+    let tapTimer;
 
-    // --- ジャイロセンサーの有効化 (iOS/Android対応) ---
-    async function requestDeviceOrientation() {
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // iOS用：許可を求める
-            try {
-                const permissionState = await DeviceOrientationEvent.requestPermission();
-                if (permissionState === 'granted') {
-                    window.addEventListener("deviceorientation", handleOrientation);
-                }
-            } catch (error) {
-                console.error("センサー許可エラー:", error);
-            }
-        } else {
-            // Android/PC用：そのまま登録
-            window.addEventListener("deviceorientation", handleOrientation);
-        }
-    }
-
-    function handleOrientation(e) {
-        // adminMode（3タップ解除後）に連動させる場合はここを調整
-        // 今回は「常に動く」ように設定して動作確認しやすくします
-        const tiltX = Math.min(Math.max(e.gamma, -25), 25) / 1.5; // 左右の傾き
-        const tiltY = Math.min(Math.max(e.beta - 45, -25), 25) / 1.5; // 前後の傾き
-
-        items.forEach(img => {
-            // 奥行きを強調するために Z軸の移動も追加
-            img.style.transform = `rotateY(${tiltX}deg) rotateX(${-tiltY}deg) translateZ(10px)`;
-        });
-    }
-
-    // 画面のどこかを最初に触った時にセンサーを起動する
-    document.body.addEventListener('click', requestDeviceOrientation, { once: true });
-
-    // --- 1 & 4. 視覚的振動と解除演出 ---
-    document.getElementById("galleryTitle").onclick = (e) => {
-        e.stopPropagation(); // センサー起動と混ざらないように
+    // --- 3タップでノイズ演出＆解除 ---
+    title.addEventListener("click", () => {
         tapCount++;
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => tapCount = 0, 500);
+
         if (tapCount === 3) {
             adminMode = true;
-            triggerGlitch();
+            runGlitchSequence();
             tapCount = 0;
         }
-        setTimeout(() => tapCount = 0, 500);
-    };
+    });
 
-    function triggerGlitch() {
-        body.classList.add("glitch-vibrate");
-        const overlay = document.getElementById("override-overlay");
+    function runGlitchSequence() {
+        // 1. ノイズレイヤーを表示し、画面を揺らす
         overlay.style.display = "flex";
+        body.classList.add("vibrate-effect");
+
+        // 2. 1.5秒後に演出を終了してギャラリーに戻す
         setTimeout(() => {
-            body.classList.remove("glitch-vibrate");
             overlay.style.display = "none";
+            body.classList.remove("vibrate-effect");
+            alert("OVERRIDE COMPLETE: DOWNLOAD ENABLED");
         }, 1500);
     }
 
-    // --- 2. プログレスバー演出 ---
-    function startLoading() {
-        loaderBar.style.width = "0%";
-        let w = 0;
-        const interval = setInterval(() => {
-            w += Math.random() * 40;
-            loaderBar.style.width = w + "%";
-            if (w >= 100) {
-                clearInterval(interval);
-                setTimeout(() => loaderBar.style.width = "0%", 200);
-            }
-        }, 40);
-    }
-
-    // ギャラリー基本機能
+    // --- ギャラリー基本機能 ---
     let currentIndex = 0;
-    items.forEach((item, index) => {
-        item.onclick = (e) => {
-            e.stopPropagation();
-            startLoading();
-            setTimeout(() => {
-                modal.classList.add("show");
-                updateModal(index);
-            }, 2500); // 演出をしっかり見せるために少し遅延
-        };
-    });
-
     function updateModal(index) {
         currentIndex = index;
         const target = items[currentIndex];
@@ -251,11 +168,21 @@
         }
     }
 
+    items.forEach((item, index) => {
+        item.onclick = () => {
+            modal.classList.add("show");
+            updateModal(index);
+        };
+    });
+
     document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % items.length; updateModal(currentIndex); };
     document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + items.length) % items.length; updateModal(currentIndex); };
     modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("show"); };
 
-    document.addEventListener('contextmenu', e => { if (!adminMode) e.preventDefault(); });
+    // 右クリック/長押し制限
+    document.addEventListener('contextmenu', e => {
+        if (!adminMode) e.preventDefault();
+    });
 </script>
 
 </body>
