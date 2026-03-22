@@ -2,166 +2,107 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Secret Gallery</title>
 
     <script>
-        // --- パスワード制御 ---
         const password = "2037";
         let input = prompt("4桁の数字パスワードを入力してください");
-
         if (input !== password) {
-            alert("パスワードが違います。どれかのwallpaper作品に隠されてるよ!");
+            alert("ACCESS DENIED");
             location.href = "https://www.pixiv.net/dashboard/works";
         }
     </script>
 
     <style>
-        /* --- 演出用：オーバーレイ (解除時のみ使用) --- */
-        #loading-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: #000;
-            display: none; /* 初期状態は非表示 */
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 20000;
-            transition: opacity 1s ease;
-            overflow: hidden;
+        :root {
+            --neon: #7FFF00;
+            --cyber-blue: #00ffff;
         }
 
-        #loading-overlay::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-            z-index: 20001;
-            background-size: 100% 4px, 4px 100%;
-            pointer-events: none;
-        }
-
-        .scanline {
-            width: 100%;
-            height: 20px;
-            background: rgba(127, 255, 0, 0.4);
-            box-shadow: 0 0 30px #7FFF00;
-            position: absolute;
-            top: -30px;
-            left: 0;
-            z-index: 20002;
-            pointer-events: none;
-        }
-
-        .scan-animate {
-            animation: scan-move 2.5s cubic-bezier(0.15, 0.44, 0.76, 0.64) forwards;
-        }
-
-        @keyframes scan-move {
-            0% { top: -30px; opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        .glitch-flash {
-            animation: glitch-anim 0.15s linear infinite;
-        }
-
-        @keyframes glitch-anim {
-            0% { transform: translateX(4px); filter: hue-rotate(45deg); opacity: 0.8; }
-            50% { transform: translateX(-4px); filter: hue-rotate(-45deg); opacity: 1; }
-            100% { transform: translateX(0); }
-        }
-
-        .loader-text {
-            color: #7FFF00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.5rem;
-            letter-spacing: 3px;
-            margin-top: 30px;
-            text-align: center;
-            z-index: 20003;
-            text-shadow: 0 0 10px #7FFF00;
-        }
-
-        /* --- 全体のデザイン --- */
         body {
-            margin: 0; padding: 0; text-align: center; font-family: sans-serif;
-            background-color: #333; color: #ffffff;
-            overflow-x: hidden;
-            /* ロード演出なしのため、最初から表示 */
-            opacity: 1;
+            margin: 0; padding: 0; background-color: #0d0d0d; color: #fff;
+            font-family: 'Courier New', monospace; overflow-x: hidden;
+            transition: filter 0.1s ease; /* 振動演出用 */
+        }
+
+        /* 1. スキャンライン & グリッド背景 */
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
+                linear-gradient(90deg, rgba(127, 255, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(127, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 100% 4px, 30px 30px, 30px 30px;
+            pointer-events: none; z-index: 100;
         }
 
         h1 {
-            background-color: rgba(0, 0, 0, 0.8); 
-            color: #7FFF00; padding: 25px; margin: 0 0 10px 0;
-            font-size: 1.8rem; border-bottom: 4px solid #7FFF00;
-            font-family: 'Courier New', Courier, monospace;
-            user-select: none; /* タップ時に青く選択されないようにする */
-            cursor: pointer;
+            background: rgba(0,0,0,0.9); color: var(--neon); padding: 20px;
+            margin: 0; border-bottom: 2px solid var(--neon); font-size: 1.5rem;
+            text-shadow: 0 0 10px var(--neon); position: sticky; top: 0; z-index: 500;
         }
 
         .gallery {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px; padding: 20px; max-width: 1200px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px; padding: 15px; perspective: 1000px; /* 3. ジャイロ連動用 */
         }
 
         .expandable {
-            width: 100%; aspect-ratio: 1 / 1; object-fit: cover; 
-            cursor: pointer; border-radius: 4px; transition: 0.3s; background: #000;
-            /* スマホでの長押し保存を禁止（解除コマンド前） */
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            border: 1px solid rgba(127, 255, 0, 0.3); border-radius: 2px;
+            transition: transform 0.1s ease-out; /* ジャイロで動く */
             -webkit-touch-callout: none;
         }
-        img.expandable { border: 3px solid #fff; }
-        video.expandable { border: 3px solid #7FFF00; box-shadow: 0 0 15px rgba(127, 255, 0, 0.5); }
-        .expandable:hover { transform: scale(1.05); }
 
-        /* モーダル設定 */
-        .modal { 
-            display: none; position: fixed; z-index: 9999; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); align-items: center; justify-content: center; 
+        /* 2. プログレスバー */
+        #loading-bar {
+            position: fixed; bottom: 0; left: 0; height: 3px;
+            background: var(--cyber-blue); width: 0%; z-index: 10005;
+            box-shadow: 0 0 10px var(--cyber-blue);
         }
-        .modal-content { max-width: 85vw; max-height: 85vh; object-fit: contain; z-index: 10000; }
-        .close { position: absolute; top: 15px; right: 25px; color: #fff; font-size: 50px; cursor: pointer; z-index: 10010; }
+
+        /* 4. 視覚的振動（グリッチ） */
+        .glitch-vibrate {
+            animation: v-shake 0.15s linear infinite;
+            filter: hue-rotate(90deg) contrast(1.5);
+        }
+        @keyframes v-shake {
+            0% { transform: translate(2px, 1px); }
+            50% { transform: translate(-2px, -1px); }
+            100% { transform: translate(0); }
+        }
+
+        /* モーダル */
+        .modal {
+            display: none; position: fixed; z-index: 10000;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); align-items: center; justify-content: center;
+        }
+        .modal-content { max-width: 90vw; max-height: 80vh; transition: 0.3s; }
         
-        .nav-btn { 
-            position: absolute; top: 50%; transform: translateY(-50%); 
-            color: rgba(255, 255, 255, 0.4); font-size: 70px; 
-            cursor: pointer; padding: 30px; z-index: 10010; transition: 0.3s;
-            user-select: none;
+        .nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            color: var(--neon); font-size: 40px; padding: 20px; z-index: 10010;
         }
-        .nav-btn:hover { color: #7FFF00; transform: translateY(-50%) scale(1.1); }
-        .prev { left: 10px; }
-        .next { right: 10px; }
+        .prev { left: 0; } .next { right: 0; }
 
-        @media (max-width: 600px) { 
-            .nav-btn { font-size: 45px; padding: 10px; }
-            .prev { left: 5px; }
-            .next { right: 5px; }
-            .modal-content { max-width: 95vw; }
+        #override-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; z-index: 30000;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: var(--cyber-blue); font-weight: bold;
         }
+
         .show { display: flex !important; }
-
-        /* 管理者モード時のスタイル（保存可能にする） */
-        body.admin-mode .expandable {
-            -webkit-touch-callout: default !important;
-        }
     </style>
 </head>
-<body>
+<body id="mainBody">
 
-<!-- 解除演出時のみ表示される -->
-<div id="loading-overlay">
-    <div class="loader-text" id="loader-msg">SYSTEM OVERRIDE...</div>
-</div>
+<div id="loading-bar"></div>
+<div id="override-overlay">SYSTEM OVERRIDE...</div>
 
-<h1 id="galleryTitle">Secret Gallery</h1>
+<h1 id="galleryTitle">SECRET_GALLERY_OS</h1>
 
 <div class="gallery" id="galleryContainer">
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
@@ -203,99 +144,95 @@
 </div>
 
 <div id="modal" class="modal">
-    <span class="close" id="closeBtn">&times;</span>
-    <span class="nav-btn prev" id="prevBtn">&#10094;</span>
+    <span class="nav-btn prev" id="prevBtn">◂</span>
     <div id="modal-content-wrapper" style="display:contents;"></div>
-    <span class="nav-btn next" id="nextBtn">&#10095;</span>
+    <span class="nav-btn next" id="nextBtn">▸</span>
 </div>
 
 <script>
-    const title = document.getElementById("galleryTitle");
-    const overlay = document.getElementById("loading-overlay");
-    const msg = document.getElementById("loader-msg");
+    const items = document.querySelectorAll(".expandable");
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
-    const items = Array.from(document.querySelectorAll(".expandable"));
-    
+    const loaderBar = document.getElementById("loading-bar");
+    const body = document.getElementById("mainBody");
     let adminMode = false;
     let tapCount = 0;
-    let tapTimer;
 
-    // --- 1. タイトル3タップ解除機能 ---
-    title.addEventListener("click", function() {
+    // 1 & 4. 視覚的振動と解除演出
+    document.getElementById("galleryTitle").onclick = () => {
         tapCount++;
-        clearTimeout(tapTimer);
-        
-        // 0.5秒以内に次のタップがない場合はリセット
-        tapTimer = setTimeout(() => { tapCount = 0; }, 500);
-
         if (tapCount === 3) {
             adminMode = true;
-            document.body.classList.add("admin-mode");
-            showCyberUnlockEffect();
+            triggerGlitch();
             tapCount = 0;
         }
-    });
+        setTimeout(() => tapCount = 0, 500);
+    };
 
-    // --- 2. 右クリック/長押し制限 ---
-    document.addEventListener('contextmenu', function(e) {
-        if (!adminMode) e.preventDefault();
-    }, false);
-
-    // --- 3. 解除演出 (3タップ後のみ) ---
-    function showCyberUnlockEffect() {
-        overlay.style.display = "flex";
-        overlay.style.opacity = "1";
-        overlay.classList.add("glitch-flash");
-
-        const scan = document.createElement("div");
-        scan.className = "scanline scan-animate";
-        overlay.appendChild(scan);
-
-        msg.innerHTML = "<span style='color:#00ffff; font-size:2rem;'>OVERRIDE SUCCESS</span><br><br><span style='color:#7FFF00; font-size:1rem;'>DOWNLOAD UNLOCKED</span>";
-
+    function triggerGlitch() {
+        body.classList.add("glitch-vibrate");
+        document.getElementById("override-overlay").style.display = "flex";
         setTimeout(() => {
-            overlay.style.opacity = "0";
-            setTimeout(() => { 
-                overlay.style.display = "none"; 
-                overlay.classList.remove("glitch-flash");
-                scan.remove();
-            }, 1000);
-        }, 2500); 
+            body.classList.remove("glitch-vibrate");
+            document.getElementById("override-overlay").style.display = "none";
+        }, 1500);
     }
 
-    // --- ギャラリー基本機能 ---
+    // 2. プログレスバー演出
+    function startLoading() {
+        loaderBar.style.width = "0%";
+        let w = 0;
+        const interval = setInterval(() => {
+            w += Math.random() * 30;
+            loaderBar.style.width = w + "%";
+            if (w >= 100) {
+                clearInterval(interval);
+                setTimeout(() => loaderBar.style.width = "0%", 200);
+            }
+        }, 50);
+    }
+
+    // 3. ジャイロセンサー連動 (スマホを傾けると画像が動く)
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener("deviceorientation", (e) => {
+            if (!adminMode) return; // 解除後のみ有効にすると「機能が解放された感」が出ます
+            const tiltX = Math.min(Math.max(e.gamma, -20), 20) / 2; // 左右
+            const tiltY = Math.min(Math.max(e.beta - 45, -20), 20) / 2; // 前後（45度を基準）
+            
+            items.forEach(img => {
+                img.style.transform = `rotateY(${tiltX}deg) rotateX(${-tiltY}deg)`;
+            });
+        });
+    }
+
+    // ギャラリー機能統合
     let currentIndex = 0;
-    function updateModalContent(index) {
+    items.forEach((item, index) => {
+        item.onclick = () => {
+            startLoading();
+            setTimeout(() => {
+                modal.classList.add("show");
+                updateModal(index);
+            }, 300);
+        };
+    });
+
+    function updateModal(index) {
         currentIndex = index;
         const target = items[currentIndex];
-        wrapper.innerHTML = ""; 
+        wrapper.innerHTML = "";
         if (target.tagName === "IMG") {
-            const fullImage = target.getAttribute("data-full") || target.src;
-            wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
+            wrapper.innerHTML = `<img src="${target.dataset.full || target.src}" class="modal-content">`;
         } else {
-            const videoSrc = target.src.split('#')[0];
-            wrapper.innerHTML = `<video src="${videoSrc}" class="modal-content" controls autoplay loop playsinline></video>`;
+            wrapper.innerHTML = `<video src="${target.src}" class="modal-content" controls autoplay loop playsinline></video>`;
         }
     }
 
-    items.forEach((item, index) => {
-        item.onclick = () => { modal.classList.add("show"); updateModalContent(index); }
-    });
-    
-    document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % items.length; updateModalContent(currentIndex); };
-    document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + items.length) % items.length; updateModalContent(currentIndex); };
-    document.getElementById("closeBtn").onclick = closeModal;
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); }
-    function closeModal() { modal.classList.remove("show"); wrapper.innerHTML = ""; }
+    document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % items.length; updateModal(currentIndex); };
+    document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + items.length) % items.length; updateModal(currentIndex); };
+    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("show"); };
 
-    // キーボード操作も一応維持
-    document.addEventListener("keydown", function(e) {
-        if (!modal.classList.contains("show")) return;
-        if (e.key === "ArrowRight") document.getElementById("nextBtn").click();
-        if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
-        if (e.key === "Escape") closeModal();
-    });
+    document.addEventListener('contextmenu', e => { if (!adminMode) e.preventDefault(); });
 </script>
 
 </body>
