@@ -6,6 +6,7 @@
     <title>Secret Gallery</title>
 
     <script>
+        // --- パスワードと演出の制御 ---
         const password = "2037";
         let input = prompt("4桁の数字パスワードを入力してください");
 
@@ -16,133 +17,173 @@
     </script>
 
     <style>
+        /* --- 演出用：ロード画面 --- */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+            transition: opacity 1s ease;
+            overflow: hidden;
+        }
+
+        #loading-overlay::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+            z-index: 20001;
+            background-size: 100% 4px, 4px 100%;
+            pointer-events: none;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 20px;
+            background: rgba(127, 255, 0, 0.4);
+            box-shadow: 0 0 30px #7FFF00;
+            position: absolute;
+            top: -30px;
+            left: 0;
+            z-index: 20002;
+            pointer-events: none;
+        }
+
+        .scan-animate {
+            animation: scan-move 2.5s cubic-bezier(0.15, 0.44, 0.76, 0.64) forwards;
+        }
+
+        @keyframes scan-move {
+            0% { top: -30px; opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .glitch-flash {
+            animation: glitch-anim 0.15s linear infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translateX(4px); filter: hue-rotate(45deg); opacity: 0.8; }
+            50% { transform: translateX(-4px); filter: hue-rotate(-45deg); opacity: 1; }
+            100% { transform: translateX(0); }
+        }
+
+        .loader-text {
+            color: #7FFF00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            margin-top: 30px;
+            text-align: center;
+            z-index: 20003;
+            text-shadow: 0 0 10px #7FFF00;
+        }
+
+        .spinner {
+            width: 60px; height: 60px;
+            border: 6px solid rgba(127, 255, 0, 0.1);
+            border-top: 6px solid #7FFF00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 20003;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         /* --- 全体のデザイン --- */
         body {
-            margin: 0;
-            padding: 0;
-            text-align: center;
-            font-family: sans-serif;
-            background-image: url("background.png"); 
-            background-size: cover;
-            background-attachment: fixed;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-color: #333;
-            color: #ffffff;
-            -webkit-tap-highlight-color: transparent;
+            margin: 0; padding: 0; text-align: center; font-family: sans-serif;
+            background-color: #333; color: #ffffff;
             overflow-x: hidden;
+            opacity: 0;
+            transition: opacity 2s ease;
         }
 
         h1 {
-            background-color: rgba(0, 0, 0, 0.6); 
-            color: #7FFF00;
-            padding: 20px;
-            margin: 0 0 10px 0;
-            font-size: 1.5rem;
-            border-bottom: 3px solid #7FFF00;
+            background-color: rgba(0, 0, 0, 0.8); 
+            color: #7FFF00; padding: 25px; margin: 0 0 10px 0;
+            font-size: 1.8rem; border-bottom: 4px solid #7FFF00;
+            font-family: 'Courier New', Courier, monospace;
         }
 
-        /* --- ギャラリー設定 --- */
         .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            padding: 10px;
-            justify-content: center; 
-            margin: 0 auto;
-            max-width: 1200px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px; padding: 20px; max-width: 1200px; margin: 0 auto;
         }
 
-        @media (max-width: 600px) {
-            .gallery {
-                grid-template-columns: repeat(2, 160px); 
-                justify-content: center;
-            }
-        }
-
-        /* 共通設定 */
         .expandable {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover; 
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: all 0.2s; /* 変化をスムーズに */
-            box-sizing: border-box;
-            border-radius: 4px;
-            background-color: #000; 
+            width: 100%; aspect-ratio: 1 / 1; object-fit: cover; 
+            cursor: pointer; border-radius: 4px; transition: 0.3s; background: #000;
+        }
+        img.expandable { border: 3px solid #fff; }
+        video.expandable { border: 3px solid #7FFF00; box-shadow: 0 0 15px rgba(127, 255, 0, 0.5); }
+        .expandable:hover { transform: scale(1.05); }
+
+        /* --- 修正版：拡大モーダル設定 --- */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 9999; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); 
+            align-items: center; 
+            justify-content: center; 
         }
 
-        /* 画像のみのデザイン（白枠） */
-        img.expandable {
-            border: 3px solid white;
+        /* 矢印と被らないよう最大幅を調整 */
+        .modal-content { 
+            max-width: 85vw; 
+            max-height: 85vh; 
+            object-fit: contain; 
+            z-index: 10000;
         }
 
-        /* ★動画のみのデザイン（緑のネオン枠）★ */
-        video.expandable {
-            border: 3px solid #7FFF00;
-            box-shadow: 0 0 15px rgba(127, 255, 0, 0.5); /* ネオンのような光 */
+        .close { 
+            position: absolute; 
+            top: 15px; right: 25px; 
+            color: #fff; font-size: 50px; 
+            cursor: pointer; 
+            z-index: 10010;
         }
 
-        /* ホバー時の演出（少し浮き上がる） */
-        .expandable:hover {
-            transform: scale(1.03);
-            z-index: 10;
-        }
-        
-        video.expandable:hover {
-            box-shadow: 0 0 25px rgba(127, 255, 0, 0.8);
-        }
-
-        /* --- 拡大モーダル --- */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            max-width: 90vw;
-            max-height: 80vh;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-        }
-
-        .close {
-            position: absolute;
-            top: 10px; right: 20px;
-            color: white; font-size: 50px; font-weight: bold;
-            cursor: pointer;
-            z-index: 10001;
-            padding: 10px;
-        }
-
-        .nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 60px;
-            font-weight: bold;
-            cursor: pointer;
-            padding: 20px;
+        /* 矢印ボタンを左右端に固定 */
+        .nav-btn { 
+            position: absolute; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: rgba(255, 255, 255, 0.4); 
+            font-size: 70px; 
+            cursor: pointer; 
+            padding: 30px; 
+            z-index: 10010; 
+            transition: all 0.3s ease;
             user-select: none;
-            z-index: 10001;
-            transition: color 0.3s;
         }
-        .nav-btn:hover { color: #7FFF00; }
+
+        .nav-btn:hover { 
+            color: #7FFF00; 
+            text-shadow: 0 0 15px #7FFF00;
+            transform: translateY(-50%) scale(1.1);
+        }
+
         .prev { left: 10px; }
         .next { right: 10px; }
 
-        @media (max-width: 600px) {
-            .nav-btn { font-size: 40px; padding: 10px; }
+        @media (max-width: 600px) { 
+            .nav-btn { font-size: 45px; padding: 10px; }
+            .prev { left: 5px; }
+            .next { right: 5px; }
+            .modal-content { max-width: 95vw; }
         }
 
         .show { display: flex !important; }
@@ -150,11 +191,14 @@
 </head>
 <body>
 
+<div id="loading-overlay">
+    <div class="spinner" id="loader-spinner"></div>
+    <div class="loader-text" id="loader-msg">SYSTEM BOOTING...</div>
+</div>
+
 <h1>Secret Gallery</h1>
 
 <div class="gallery" id="galleryContainer">
-    <!-- 画像セクション -->
-    <!-- (中略: 画像リスト) -->
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -180,17 +224,16 @@
     <img src="thumb_20260316023.jpg" data-full="20260316023.png" alt="作品23" class="expandable" loading="lazy">
     <img src="thumb_20260316024.jpg" data-full="20260316024.png" alt="作品24" class="expandable" loading="lazy">
     
-    <!-- 動画セクション -->
     <video src="20260316001move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316002move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316003move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-<video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
@@ -201,16 +244,87 @@
 </div>
 
 <script>
+    const overlay = document.getElementById("loading-overlay");
+    const msg = document.getElementById("loader-msg");
+    const spinner = document.getElementById("loader-spinner");
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
     const items = Array.from(document.querySelectorAll(".expandable"));
-    let currentIndex = 0;
+    
+    let inputBuffer = "";
+    let adminMode = false;
 
+    // --- 1. 初回ロード演出 (暗黒時間を短く、文字を長く) ---
+    window.onload = function() {
+        // パスワード入力後、すぐに文字を出す (800ms -> 200ms)
+        setTimeout(() => {
+            msg.innerText = "AUTHENTICATING...";
+            
+            // 認証中メッセージをじっくり見せる (1500ms -> 2000ms)
+            setTimeout(() => {
+                msg.innerHTML = "<span style='color:#00ffff'>ACCESS GRANTED</span>";
+                spinner.style.borderColor = "#00ffff";
+                spinner.style.borderTopColor = "#00ffff";
+                
+                // 完了メッセージを表示したまま少し待機
+                setTimeout(() => {
+                    overlay.style.opacity = "0";
+                    document.body.style.opacity = "1";
+                    setTimeout(() => { overlay.style.display = "none"; }, 1500);
+                }, 1200); 
+            }, 2000); 
+        }, 200); 
+    };
+
+    document.addEventListener('contextmenu', function(e) {
+        if (!adminMode) {
+            e.preventDefault();
+        }
+    }, false);
+
+    document.addEventListener("keydown", function(e) {
+        inputBuffer += e.key.toLowerCase();
+        if (inputBuffer.includes("open")) {
+            adminMode = true;
+            inputBuffer = "";
+            showCyberUnlockEffect();
+        }
+        if (inputBuffer.length > 10) inputBuffer = inputBuffer.substring(1);
+
+        if (!modal.classList.contains("show")) return;
+        if (e.key === "ArrowRight") document.getElementById("nextBtn").click();
+        if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
+        if (e.key === "Escape") closeModal();
+    });
+
+    function showCyberUnlockEffect() {
+        overlay.style.display = "flex";
+        overlay.style.opacity = "1";
+        overlay.classList.add("glitch-flash");
+        spinner.style.display = "none";
+
+        const scan = document.createElement("div");
+        scan.className = "scanline scan-animate";
+        overlay.appendChild(scan);
+
+        msg.innerHTML = "<span style='color:#00ffff; font-size:2rem;'>OVERRIDE SUCCESS</span><br><br><span style='color:#7FFF00; font-size:1rem;'>RIGHT-CLICK UNLOCKED</span>";
+
+        setTimeout(() => {
+            overlay.style.opacity = "0";
+            setTimeout(() => { 
+                overlay.style.display = "none"; 
+                overlay.classList.remove("glitch-flash");
+                scan.remove();
+                spinner.style.display = "block";
+            }, 1500);
+        }, 3500); 
+    }
+
+    let currentIndex = 0;
     function updateModalContent(index) {
         currentIndex = index;
         const target = items[currentIndex];
         wrapper.innerHTML = ""; 
-
         if (target.tagName === "IMG") {
             const fullImage = target.getAttribute("data-full") || target.src;
             wrapper.innerHTML = `<img src="${fullImage}" class="modal-content">`;
@@ -221,40 +335,13 @@
     }
 
     items.forEach((item, index) => {
-        item.onclick = function() {
-            modal.classList.add("show");
-            updateModalContent(index);
-        }
+        item.onclick = () => { modal.classList.add("show"); updateModalContent(index); }
     });
-
-    document.getElementById("nextBtn").onclick = (e) => {
-        e.stopPropagation();
-        currentIndex = (currentIndex + 1) % items.length;
-        updateModalContent(currentIndex);
-    };
-
-    document.getElementById("prevBtn").onclick = (e) => {
-        e.stopPropagation();
-        currentIndex = (currentIndex - 1 + items.length) % items.length;
-        updateModalContent(currentIndex);
-    };
-
+    document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % items.length; updateModalContent(currentIndex); };
+    document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + items.length) % items.length; updateModalContent(currentIndex); };
     document.getElementById("closeBtn").onclick = closeModal;
-    modal.onclick = function(e) {
-        if (e.target === modal) closeModal();
-    }
-
-    function closeModal() {
-        modal.classList.remove("show");
-        wrapper.innerHTML = "";
-    }
-
-    document.onkeydown = function(e) {
-        if (!modal.classList.contains("show")) return;
-        if (e.key === "ArrowRight") document.getElementById("nextBtn").click();
-        if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
-        if (e.key === "Escape") closeModal();
-    };
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); }
+    function closeModal() { modal.classList.remove("show"); wrapper.innerHTML = ""; }
 </script>
 
 </body>
