@@ -9,14 +9,11 @@
         const password = "2037";
         let input = prompt("PASSWORD REQUIRED");
         let userID = "";
-
         if (input !== password) {
             alert("ACCESS DENIED");
             location.href = "https://www.pixiv.net/dashboard/works";
         } else {
-            // パスワード正解後にIDを入力させる
-            userID = prompt("ENTER UNIT ID", "Guest_Unit");
-            if(!userID) userID = "Unknown_Unit";
+            userID = prompt("ENTER UNIT ID", "Guest_Unit") || "Unknown_Unit";
         }
     </script>
 
@@ -26,92 +23,101 @@
             --nier-dark: #353530;
             --nier-accent: #8e8a78;
             --nier-white: #e6e5d8;
-            --mx: 50%;
-            --my: 50%;
+            --mx: 50%; --my: 50%;
         }
 
         body {
             margin: 0; padding: 0; 
-            background-color: var(--nier-dark); 
+            background-color: #2a2a25; /* 少し深く暗い色に */
             color: var(--nier-beige);
             font-family: 'Courier New', monospace; 
             overflow-x: hidden;
             letter-spacing: 0.05em;
         }
 
-        /* 常に表示される走査線 */
-        body::before {
+        /* --- ガラスの反射・質感レイヤー（最前面） --- */
+        .glass-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%, rgba(255,255,255,0.02) 100%),
+                radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,0.3) 100%);
+            pointer-events: none; z-index: 2000;
+        }
+
+        /* 常に表示される走査線（中層） */
+        .scanlines {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
             background-size: 100% 2px;
             pointer-events: none; z-index: 100; opacity: 0.4;
         }
 
-        /* --- 起動演出用スタイル --- */
-        #boot-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--nier-dark); color: var(--nier-beige);
-            z-index: 50000; display: none; flex-direction: column;
-            justify-content: flex-end; padding: 20px; box-sizing: border-box;
-            overflow: hidden; font-size: 0.8rem;
+        /* --- 視差レイヤー構造 --- */
+        #content-wrapper {
+            position: relative;
+            z-index: 10;
+            will-change: transform;
         }
-        .boot-log { animation: slide-up 0.1s forwards; opacity: 0.8; margin-bottom: 2px; }
-        @keyframes slide-up { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 0.8; } }
 
         h1 {
             background: var(--nier-beige); color: var(--nier-dark);
             padding: 15px; margin: 0; font-size: 1.1rem; text-align: center;
             cursor: pointer; user-select: none; border-bottom: 4px solid var(--nier-accent);
             position: sticky; top: 0; z-index: 500; text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 20px; }
-        .expandable { width: 100%; aspect-ratio: 1/1; object-fit: cover; border: 1px solid var(--nier-beige); filter: sepia(0.3) contrast(1.1); cursor: pointer; }
+        .gallery { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 12px; padding: 20px;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
 
-        /* スキャナー */
-        #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; opacity: 0; transition: opacity 0.2s; }
+        .expandable { 
+            width: 100%; aspect-ratio: 1/1; object-fit: cover; 
+            border: 1px solid rgba(186, 181, 161, 0.4); 
+            filter: sepia(0.3) contrast(1.1) brightness(0.9); 
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .expandable:hover {
+            filter: sepia(0) contrast(1.2) brightness(1);
+            transform: translateZ(20px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+        }
+
+        /* モーダル・起動演出等は維持 */
+        #boot-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--nier-dark); color: var(--nier-beige); z-index: 50000; display: none; flex-direction: column; justify-content: flex-end; padding: 20px; box-sizing: border-box; overflow: hidden; font-size: 0.8rem; }
+        .boot-log { animation: slide-up 0.1s forwards; margin-bottom: 2px; }
+        @keyframes slide-up { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 0.8; } }
+        
+        #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1500; opacity: 0; transition: opacity 0.2s; }
         #scanner-overlay.active { opacity: 1; }
         #scanner-overlay::before { content: ""; position: absolute; top: 0; left: var(--mx); width: 0.5px; height: 100%; background: var(--nier-beige); }
         #scanner-overlay::after { content: ""; position: absolute; top: var(--my); left: 0; width: 100%; height: 1px; background: var(--nier-beige); }
 
-        /* ハッキング解除画面 */
-        #override-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--nier-beige); display: none; z-index: 30000;
-            flex-direction: column; align-items: center; justify-content: center;
-            color: var(--nier-dark); padding: 20px; box-sizing: border-box; text-align: center;
-        }
-
-        .log-line { font-size: 4.5vw; line-height: 1.8; font-weight: bold; }
-        @media (min-width: 600px) { .log-line { font-size: 1.2rem; } }
-
+        .modal { display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 25, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { max-width: 90vw; max-height: 80vh; border: 1px solid var(--nier-beige); box-shadow: 0 0 50px rgba(0,0,0,1); }
         #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; pointer-events: none; z-index: 20000; mix-blend-mode: overlay; }
-        .noise-active { opacity: 0.15 !important; }
-
-        .modal { display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(53, 53, 48, 0.98); align-items: center; justify-content: center; }
-        .modal-content { max-width: 90vw; max-height: 80vh; border: 1px solid var(--nier-beige); }
-        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); color: var(--nier-beige); font-size: 30px; padding: 20px; z-index: 10010; cursor: pointer; }
-        .show { display: flex !important; }
-        .vibrate { animation: vibrate-anim 0.1s linear infinite; }
-        @keyframes vibrate-anim { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0); } }
-        .blink { animation: blink-anim 0.4s infinite; }
-        @keyframes blink-anim { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .noise-active { opacity: 0.1 !important; }
         #loading-bar { position: fixed; bottom: 0; left: 0; height: 2px; background: var(--nier-white); width: 0%; z-index: 10005; }
     </style>
 </head>
 <body id="mainBody">
 
 <div id="boot-screen"></div>
-<div id="scanner-overlay"><div class="scan-data" id="scan-data"></div></div>
-<div id="loading-bar"></div>
-<div id="override-overlay"></div>
-<div id="noise-overlay"></div>
+<div class="glass-overlay"></div>
+<div class="scanlines"></div>
 
-<h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
-
-<div class="gallery" id="galleryContainer">
-    <!-- 画像・動画リスト -->
-     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
+<div id="content-wrapper">
+    <h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
+    <div class="gallery" id="galleryContainer">
+        <!-- 画像ループ（既存のimg/videoタグをここに） -->
+        <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
     <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
@@ -147,135 +153,84 @@
     <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    </div>
 </div>
 
+<div id="scanner-overlay"><div class="scan-data" id="scan-data"></div></div>
+<div id="loading-bar"></div>
+<div id="noise-overlay"></div>
+
 <div id="modal" class="modal">
-    <span class="nav-btn prev" id="prevBtn" style="left:0;">◁</span>
     <div id="modal-content-wrapper" style="display:contents;"></div>
-    <span class="nav-btn next" id="nextBtn" style="right:0;">▷</span>
 </div>
 
 <script>
-    const bootScreen = document.getElementById("boot-screen");
-    const overrideOverlay = document.getElementById("override-overlay");
-    const body = document.getElementById("mainBody");
+    const wrapper = document.getElementById("content-wrapper");
+    const title = document.getElementById("galleryTitle");
 
-    // --- 1. 起動演出の実行 ---
+    // --- 1. スクロール連動擬似パララックス ---
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        // 背景とコンテンツをわずかにずらして奥行きを出す
+        // タイトルは固定、ギャラリーは標準、背景(走査線)は固定
+        // ここではギャラリー内のアイテムに微細な視差を与えます
+        const items = document.querySelectorAll('.expandable');
+        items.forEach((item, index) => {
+            const speed = 0.05;
+            const yPos = -(scrolled * speed);
+            // 偶数・奇数で動きを少し変えるとより立体的
+            const shift = index % 2 === 0 ? yPos : -yPos;
+            item.style.transform = `translateY(${shift * 0.2}px)`;
+        });
+    });
+
+    // --- 2. 起動演出 ---
     window.addEventListener('DOMContentLoaded', () => {
+        const bootScreen = document.getElementById("boot-screen");
         bootScreen.style.display = "flex";
-        const logs = [
-            "SYSTEM_BOOT_SEQUENCE_START",
-            "INITIALIZING UNIT ARCHIVE...",
-            "CONNECTING TO BUNKERS... [OK]",
-            `CHECKING_ID: ${userID.toUpperCase()}`,
-            "AUTHENTICATION_SUCCESSFUL",
-            "LOADING_CORE_SYSTEM_V3.02...",
-            "DECRYPTING_VISUAL_DATA...",
-            "MEMORY_SECTOR_SCAN... 100%",
-            "ESTABLISHING_SECURE_LINK...",
-            "READY.",
-            `WELCOME, ${userID.toUpperCase()}`
-        ];
-
+        const logs = ["ARCHIVE_ACCESS_START", "DECRYPTING...", `USER_ID: ${userID.toUpperCase()}`, "SUCCESS."];
         let i = 0;
         const interval = setInterval(() => {
             if (i < logs.length) {
                 const div = document.createElement("div");
-                div.className = "boot-log";
-                div.innerText = `> ${logs[i]}`;
-                bootScreen.appendChild(div);
-                if (bootScreen.childNodes.length > 25) bootScreen.removeChild(bootScreen.firstChild);
-                i++;
+                div.className = "boot-log"; div.innerText = `> ${logs[i]}`;
+                bootScreen.appendChild(div); i++;
             } else {
                 clearInterval(interval);
                 setTimeout(() => {
                     bootScreen.style.opacity = "0";
                     bootScreen.style.transition = "opacity 0.8s";
                     setTimeout(() => bootScreen.style.display = "none", 800);
-                }, 1200);
+                }, 800);
             }
-        }, 100);
+        }, 150);
     });
 
-    // --- 2. ロック解除演出（修正版：何度でも動く） ---
-    let tapCount = 0;
-    let adminMode = false;
-    document.getElementById("galleryTitle").onclick = () => {
-        tapCount++;
-        if (tapCount === 3) {
-            adminMode = true;
-            overrideOverlay.innerHTML = ""; // 毎回リセット
-            overrideOverlay.style.display = "flex";
-            body.classList.add("vibrate");
-
-            overrideOverlay.innerHTML = `
-                <div class="log-group">
-                    <div class="log-line">> SYNCING_WITH_BUNKER...</div>
-                    <div class="log-line">> AUTHENTICATING...</div>
-                    <div class="log-line">> ACCESS_GRANTED.</div>
-                    <div class="log-line" style="color:#666; margin-top:10px;">STATUS: <span class="blink">UNLOCKED</span></div>
-                </div>`;
-
-            setTimeout(() => {
-                body.classList.remove("vibrate");
-                overrideOverlay.style.display = "none";
-            }, 2000);
-            tapCount = 0;
-        }
-        setTimeout(() => { if(tapCount < 3) tapCount = 0; }, 500);
-    };
-
-    // --- 3. ギャラリー・モーダル・スキャナー (既存機能) ---
-    const modal = document.getElementById("modal");
-    const wrapper = document.getElementById("modal-content-wrapper");
-    const loaderBar = document.getElementById("loading-bar");
-    const noiseOverlay = document.getElementById("noise-overlay");
-    const galleryContainer = document.getElementById("galleryContainer");
-    let currentIndex = 0;
-
+    // --- 3. スキャナー & モーダル機能 (既存) ---
     const updateScanner = (e) => {
-        const touch = e.touches[0];
+        const touch = e.touches ? e.touches[0] : e;
         document.documentElement.style.setProperty('--mx', (touch.clientX / window.innerWidth) * 100 + '%');
         document.documentElement.style.setProperty('--my', (touch.clientY / window.innerHeight) * 100 + '%');
-        document.getElementById("scan-data").innerHTML = `LOC_ID: 0x${Math.round(touch.clientX).toString(16).toUpperCase()}<br>USER: ${userID.toUpperCase()}`;
     };
-    document.addEventListener("touchstart", (e) => { if (!modal.classList.contains("show")) { document.getElementById("scanner-overlay").classList.add("active"); updateScanner(e); } });
-    document.addEventListener("touchmove", (e) => { if (document.getElementById("scanner-overlay").classList.contains("active")) updateScanner(e); });
+    document.addEventListener("touchstart", (e) => { document.getElementById("scanner-overlay").classList.add("active"); updateScanner(e); });
+    document.addEventListener("touchmove", updateScanner);
     document.addEventListener("touchend", () => document.getElementById("scanner-overlay").classList.remove("active"));
 
-    galleryContainer.onclick = (e) => {
+    const modal = document.getElementById("modal");
+    const modalWrapper = document.getElementById("modal-content-wrapper");
+    const noise = document.getElementById("noise-overlay");
+    
+    document.getElementById("galleryContainer").onclick = (e) => {
         const target = e.target.closest(".expandable");
         if (!target) return;
-        const allItems = Array.from(document.querySelectorAll(".expandable"));
-        currentIndex = allItems.indexOf(target);
-        noiseOverlay.classList.add("noise-active");
-        let w = 0;
-        const interval = setInterval(() => {
-            w += Math.random() * 40;
-            loaderBar.style.width = Math.min(w, 100) + "%";
-            if (w >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    loaderBar.style.width = "0%";
-                    noiseOverlay.classList.remove("noise-active");
-                    modal.classList.add("show");
-                    updateModal(allItems);
-                }, 300);
-            }
-        }, 70);
+        noise.classList.add("noise-active");
+        setTimeout(() => {
+            noise.classList.remove("noise-active");
+            modal.style.display = "flex";
+            modalWrapper.innerHTML = target.tagName === "IMG" ? `<img src="${target.dataset.full || target.src}" class="modal-content">` : `<video src="${target.src}" class="modal-content" controls autoplay loop playsinline></video>`;
+        }, 300);
     };
-
-    function updateModal(allItems) {
-        const target = allItems[currentIndex];
-        wrapper.innerHTML = target.tagName === "IMG" ? 
-            `<img src="${target.dataset.full || target.src}" class="modal-content">` : 
-            `<video src="${target.src}" class="modal-content" controls autoplay loop playsinline></video>`;
-    }
-
-    document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % document.querySelectorAll(".expandable").length; updateModal(Array.from(document.querySelectorAll(".expandable"))); };
-    document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + document.querySelectorAll(".expandable").length) % document.querySelectorAll(".expandable").length; updateModal(Array.from(document.querySelectorAll(".expandable"))); };
-    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("show"); };
-    document.addEventListener('contextmenu', e => { if (!adminMode) e.preventDefault(); });
+    modal.onclick = () => modal.style.display = "none";
 </script>
 
 </body>
