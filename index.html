@@ -19,6 +19,8 @@
             --neon: #7FFF00;
             --cyber-blue: #00ffff;
             --error-red: #ff003c;
+            --mx: 50%;
+            --my: 50%;
         }
 
         body {
@@ -26,18 +28,21 @@
             font-family: 'Courier New', monospace; overflow-x: hidden;
         }
 
-        /* 背景のスキャンライン（常時表示） */
+        /* 1. スキャンライン & グリッド背景 */
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-                        linear-gradient(90deg, rgba(127, 255, 0, 0.02) 1px, transparent 1px);
-            background-size: 100% 4px, 20px 20px;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
+                linear-gradient(90deg, rgba(127, 255, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(127, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 100% 4px, 30px 30px, 30px 30px;
             pointer-events: none; z-index: 100;
         }
 
         h1 {
             background: rgba(0,0,0,0.9); color: var(--neon); padding: 20px;
             margin: 0; border-bottom: 2px solid var(--neon); font-size: 1.5rem;
+            text-shadow: 0 0 10px var(--neon); position: sticky; top: 0; z-index: 500;
             text-align: center; cursor: pointer; user-select: none;
         }
 
@@ -48,67 +53,126 @@
 
         .expandable {
             width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border: 1px solid rgba(127, 255, 0, 0.3);
-            -webkit-touch-callout: none; /* 解除前は保存禁止 */
+            border: 1px solid rgba(127, 255, 0, 0.3); border-radius: 2px;
+            -webkit-touch-callout: none;
         }
 
-        /* --- 強力なグリッチ演出用レイヤー --- */
-        #glitch-overlay {
+        /* --- 指追従スキャン演出 --- */
+        #scanner-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; z-index: 50000;
-            align-items: center; justify-content: center;
-            overflow: hidden;
+            pointer-events: none; z-index: 1000; opacity: 0;
+            transition: opacity 0.2s;
+        }
+        #scanner-overlay.active { opacity: 1; }
+
+        #scanner-overlay::before { /* 縦線 */
+            content: ""; position: absolute; top: 0; left: var(--mx);
+            width: 1px; height: 100%; background: var(--neon);
+            box-shadow: 0 0 8px var(--neon);
+        }
+        #scanner-overlay::after { /* 横線 */
+            content: ""; position: absolute; top: var(--my); left: 0;
+            width: 100%; height: 1px; background: var(--neon);
+            box-shadow: 0 0 8px var(--neon);
         }
 
-        .glitch-text {
-            font-size: 2rem; color: var(--cyber-blue);
-            text-shadow: 2px 0 var(--error-red), -2px 0 var(--neon);
-            animation: text-glitch 0.1s infinite;
+        .scan-data {
+            position: absolute; top: calc(var(--my) + 15px); left: calc(var(--mx) + 15px);
+            color: var(--cyber-blue); font-size: 0.6rem; line-height: 1.2;
+            text-shadow: 0 0 5px var(--cyber-blue);
         }
 
-        @keyframes text-glitch {
-            0% { transform: skew(20deg); opacity: 0.8; }
-            50% { transform: skew(-20deg); opacity: 1; }
-            100% { transform: skew(0deg); }
+        /* 2. プログレスバー */
+        #loading-bar {
+            position: fixed; bottom: 0; left: 0; height: 3px;
+            background: var(--cyber-blue); width: 0%; z-index: 10005;
+            box-shadow: 0 0 10px var(--cyber-blue);
         }
 
-        /* 画面全体の揺れ演出 */
-        .vibrate-effect {
-            animation: screen-shake 0.1s infinite;
-            filter: contrast(2) hue-rotate(90deg);
+        /* 4. 視覚的振動（グリッチ） */
+        .glitch-vibrate {
+            animation: v-shake 0.1s linear infinite;
+            filter: hue-rotate(90deg) contrast(1.5);
         }
-
-        @keyframes screen-shake {
-            0% { transform: translate(5px, 5px); }
-            50% { transform: translate(-5px, -5px); }
+        @keyframes v-shake {
+            0% { transform: translate(3px, 2px); }
+            50% { transform: translate(-3px, -2px); }
             100% { transform: translate(0); }
         }
 
-        /* モーダル（拡大画面） */
+        /* モーダル */
         .modal {
             display: none; position: fixed; z-index: 10000;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.98); align-items: center; justify-content: center;
         }
-        .modal-content { max-width: 85vw; max-height: 80vh; object-fit: contain; }
-        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); color: var(--neon); font-size: 50px; padding: 20px; z-index: 10010; }
-        .prev { left: 5px; } .next { right: 5px; }
+        .modal-content { max-width: 90vw; max-height: 80vh; transition: 0.3s; }
+        
+        .nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            color: var(--neon); font-size: 40px; padding: 20px; z-index: 10010;
+        }
+        .prev { left: 0; } .next { right: 0; }
+
+        /* 3タップ解除時のオーバーレイ */
+        #override-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 30000;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: var(--cyber-blue); font-weight: bold; font-size: 1.2rem;
+            text-shadow: 0 0 10px var(--cyber-blue);
+        }
 
         .show { display: flex !important; }
     </style>
 </head>
 <body id="mainBody">
 
-<div id="glitch-overlay">
-    <div class="glitch-text">CRACKING SYSTEM...</div>
+<div id="scanner-overlay">
+    <div class="scan-data" id="scan-data"></div>
 </div>
+<div id="loading-bar"></div>
+<div id="override-overlay">CRACKING SYSTEM...</div>
 
 <h1 id="galleryTitle">SECRET_GALLERY_OS</h1>
 
-<div class="gallery">
-    <!-- 画像・動画リスト（必要分追加してください） -->
-    <img src="thumb_20260316001.jpg" data-full="20260316001.png" class="expandable">
-    <video src="20260316001move.mp4#t=0.1" class="expandable" muted loop playsinline></video>
+<div class="gallery" id="galleryContainer">
+    <!-- 画像・動画リスト -->
+    <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
+    <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
+    <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
+    <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
+    <img src="thumb_20260316005.jpg" data-full="20260316005.png" alt="作品5" class="expandable" loading="lazy">
+    <img src="thumb_20260316006.jpg" data-full="20260316006.png" alt="作品6" class="expandable" loading="lazy">
+    <img src="thumb_20260316007.jpg" data-full="20260316007.png" alt="作品7" class="expandable" loading="lazy">
+    <img src="thumb_20260316008.jpg" data-full="20260316008.png" alt="作品8" class="expandable" loading="lazy">
+    <img src="thumb_20260316009.jpg" data-full="20260316009.png" alt="作品9" class="expandable" loading="lazy">
+    <img src="thumb_20260316010.jpg" data-full="20260316010.png" alt="作品10" class="expandable" loading="lazy">
+    <img src="thumb_20260316011.jpg" data-full="20260316011.png" alt="作品11" class="expandable" loading="lazy">
+    <img src="thumb_20260316012.jpg" data-full="20260316012.png" alt="作品12" class="expandable" loading="lazy">
+    <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
+    <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
+    <img src="thumb_20260316015.jpg" data-full="20260316015.png" alt="作品15" class="expandable" loading="lazy">
+    <img src="thumb_20260316016.jpg" data-full="20260316016.png" alt="作品16" class="expandable" loading="lazy">
+    <img src="thumb_20260316017.jpg" data-full="20260316017.png" alt="作品17" class="expandable" loading="lazy">
+    <img src="thumb_20260316018.jpg" data-full="20260316018.png" alt="作品18" class="expandable" loading="lazy">
+    <img src="thumb_20260316019.jpg" data-full="20260316019.png" alt="作品19" class="expandable" loading="lazy">
+    <img src="thumb_20260316020.jpg" data-full="20260316020.png" alt="作品20" class="expandable" loading="lazy">
+    <img src="thumb_20260316021.jpg" data-full="20260316021.png" alt="作品21" class="expandable" loading="lazy">
+    <img src="thumb_20260316022.jpg" data-full="20260316022.png" alt="作品22" class="expandable" loading="lazy">
+    <img src="thumb_20260316023.jpg" data-full="20260316023.png" alt="作品23" class="expandable" loading="lazy">
+    <img src="thumb_20260316024.jpg" data-full="20260316024.png" alt="作品24" class="expandable" loading="lazy">
+    
+    <video src="20260316001move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316002move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316003move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
@@ -118,45 +182,100 @@
 </div>
 
 <script>
-    const title = document.getElementById("galleryTitle");
-    const overlay = document.getElementById("glitch-overlay");
-    const body = document.getElementById("mainBody");
     const items = document.querySelectorAll(".expandable");
     const modal = document.getElementById("modal");
     const wrapper = document.getElementById("modal-content-wrapper");
-
+    const loaderBar = document.getElementById("loading-bar");
+    const body = document.getElementById("mainBody");
+    const scanner = document.getElementById("scanner-overlay");
+    const scanData = document.getElementById("scan-data");
+    
     let adminMode = false;
     let tapCount = 0;
-    let tapTimer;
 
-    // --- 3タップでノイズ演出＆解除 ---
-    title.addEventListener("click", () => {
-        tapCount++;
-        clearTimeout(tapTimer);
-        tapTimer = setTimeout(() => tapCount = 0, 500);
+    // --- 1. 指追従スキャン演出 ---
+    const updateScanner = (e) => {
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const px = (x / window.innerWidth) * 100;
+        const py = (y / window.innerHeight) * 100;
+        
+        document.documentElement.style.setProperty('--mx', px + '%');
+        document.documentElement.style.setProperty('--my', py + '%');
+        
+        const hexX = Math.round(x).toString(16).toUpperCase();
+        const hexY = Math.round(y).toString(16).toUpperCase();
+        scanData.innerHTML = `SCAN_X: 0x${hexX}<br>SCAN_Y: 0x${hexY}<br>STATUS: ACTIVE`;
+    };
 
-        if (tapCount === 3) {
-            adminMode = true;
-            runGlitchSequence();
-            tapCount = 0;
+    document.addEventListener("touchstart", (e) => {
+        if (!modal.classList.contains("show")) {
+            scanner.classList.add("active");
+            updateScanner(e);
         }
+    }, { passive: false });
+
+    document.addEventListener("touchmove", (e) => {
+        if (scanner.classList.contains("active")) {
+            updateScanner(e);
+        }
+    }, { passive: false });
+
+    document.addEventListener("touchend", () => {
+        scanner.classList.remove("active");
     });
 
-    function runGlitchSequence() {
-        // 1. ノイズレイヤーを表示し、画面を揺らす
-        overlay.style.display = "flex";
-        body.classList.add("vibrate-effect");
+    // --- 2. 3タップでノイズ演出＆解除 ---
+    document.getElementById("galleryTitle").onclick = (e) => {
+        e.stopPropagation();
+        tapCount++;
+        if (tapCount === 3) {
+            adminMode = true;
+            triggerGlitch();
+            tapCount = 0;
+        }
+        setTimeout(() => tapCount = 0, 500);
+    };
 
-        // 2. 1.5秒後に演出を終了してギャラリーに戻す
+    function triggerGlitch() {
+        body.classList.add("glitch-vibrate");
+        const overlay = document.getElementById("override-overlay");
+        overlay.style.display = "flex";
+        
+        // 1.5秒後に確実に演出を終了させる
         setTimeout(() => {
+            body.classList.remove("glitch-vibrate");
             overlay.style.display = "none";
-            body.classList.remove("vibrate-effect");
-            alert("OVERRIDE COMPLETE: DOWNLOAD ENABLED");
         }, 1500);
     }
 
-    // --- ギャラリー基本機能 ---
+    // --- 3. プログレスバー演出 ---
+    function startLoading() {
+        loaderBar.style.width = "0%";
+        let w = 0;
+        const interval = setInterval(() => {
+            w += Math.random() * 40;
+            loaderBar.style.width = w + "%";
+            if (w >= 100) {
+                clearInterval(interval);
+                setTimeout(() => loaderBar.style.width = "0%", 200);
+            }
+        }, 40);
+    }
+
+    // ギャラリー基本機能
     let currentIndex = 0;
+    items.forEach((item, index) => {
+        item.onclick = (e) => {
+            e.stopPropagation();
+            startLoading();
+            setTimeout(() => {
+                modal.classList.add("show");
+                updateModal(index);
+            }, 500); // 演出時間は少し短縮して快適に
+        };
+    });
+
     function updateModal(index) {
         currentIndex = index;
         const target = items[currentIndex];
@@ -168,21 +287,11 @@
         }
     }
 
-    items.forEach((item, index) => {
-        item.onclick = () => {
-            modal.classList.add("show");
-            updateModal(index);
-        };
-    });
-
     document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % items.length; updateModal(currentIndex); };
     document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + items.length) % items.length; updateModal(currentIndex); };
     modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("show"); };
 
-    // 右クリック/長押し制限
-    document.addEventListener('contextmenu', e => {
-        if (!adminMode) e.preventDefault();
-    });
+    document.addEventListener('contextmenu', e => { if (!adminMode) e.preventDefault(); });
 </script>
 
 </body>
