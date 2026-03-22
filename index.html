@@ -33,6 +33,7 @@
             letter-spacing: 0.05em;
         }
 
+        /* 常に表示される走査線 */
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
@@ -64,6 +65,7 @@
             cursor: pointer;
         }
 
+        /* スキャナー */
         #scanner-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 1000; opacity: 0;
@@ -82,30 +84,43 @@
 
         #loading-bar { position: fixed; bottom: 0; left: 0; height: 2px; background: var(--nier-white); width: 0%; z-index: 10005; }
 
-        /* --- 修正ポイント：解除演出オーバーレイ --- */
+        /* --- 修正：スマホで見切れない解除演出 --- */
         #override-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--nier-beige); 
             display: none; 
             z-index: 30000;
             flex-direction: column; 
-            align-items: flex-start; /* 左揃え */
-            justify-content: center; /* 画面中央に配置 */
+            align-items: center; 
+            justify-content: center; 
             color: var(--nier-dark); 
-            padding: 0 15%; /* 左右にマージンを持たせて中央寄せに見せる */
+            padding: 20px;
             box-sizing: border-box; 
-            font-size: 1rem;
-            line-height: 2;
+            text-align: center;
+        }
+
+        .log-group {
+            display: inline-block;
+            text-align: left;
+            max-width: 90%;
+        }
+
+        .log-line {
+            font-size: 4.5vw; /* 画面幅に合わせて伸縮 */
+            line-height: 1.8;
+            word-break: break-all;
             font-weight: bold;
         }
 
-        /* スマホ向けの微調整 */
-        @media (max-width: 600px) {
-            #override-overlay {
-                font-size: 0.8rem; /* 文字を少し小さく */
-                padding: 0 10%;    /* 余白を少し狭く */
-            }
+        @media (min-width: 600px) { .log-line { font-size: 1.2rem; } }
+
+        /* --- 追加：ノイズ（砂嵐）演出 --- */
+        #noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif');
+            opacity: 0; pointer-events: none; z-index: 20000; mix-blend-mode: overlay;
         }
+        .noise-active { opacity: 0.15 !important; }
 
         .modal {
             display: none; position: fixed; z-index: 10000;
@@ -128,11 +143,12 @@
 <div id="scanner-overlay"><div class="scan-data" id="scan-data"></div></div>
 <div id="loading-bar"></div>
 <div id="override-overlay"></div>
+<div id="noise-overlay"></div>
 
 <h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
 
 <div class="gallery" id="galleryContainer">
-    <!-- 画像・動画リスト（省略せずにそのままお使いください） -->
+    <!-- 作品リストをここへ配置 -->
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -169,6 +185,7 @@
     <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
     <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <video src="20260316001move.mp4#t=0.1" class="expandable" muted preload="metadata"></video>
 </div>
 
 <div id="modal" class="modal">
@@ -185,20 +202,21 @@
     const scanner = document.getElementById("scanner-overlay");
     const scanData = document.getElementById("scan-data");
     const overrideOverlay = document.getElementById("override-overlay");
+    const noiseOverlay = document.getElementById("noise-overlay");
     const galleryContainer = document.getElementById("galleryContainer");
     
     let adminMode = false;
     let tapCount = 0;
     let currentIndex = 0;
 
-    // --- 演出：スキャナー ---
+    // --- スキャナー制御 ---
     const updateScanner = (e) => {
         const touch = e.touches[0];
         const px = (touch.clientX / window.innerWidth) * 100;
         const py = (touch.clientY / window.innerHeight) * 100;
         document.documentElement.style.setProperty('--mx', px + '%');
         document.documentElement.style.setProperty('--my', py + '%');
-        scanData.innerHTML = `LOC_ID: 0x${Math.round(touch.clientX).toString(16).toUpperCase()}<br>ANALYZING ARCHIVE...`;
+        scanData.innerHTML = `LOC_ID: 0x${Math.round(touch.clientX).toString(16).toUpperCase()}<br>ANALYZING...`;
     };
 
     document.addEventListener("touchstart", (e) => {
@@ -214,32 +232,31 @@
 
     document.addEventListener("touchend", () => scanner.classList.remove("active"));
 
-    // --- 演出：タイトル3タップ解除（修正済） ---
-    document.getElementById("galleryTitle").onclick = (e) => {
+    // --- 解除演出（スマホ対応版） ---
+    document.getElementById("galleryTitle").onclick = () => {
         tapCount++;
         if (tapCount === 3) {
             adminMode = true;
             body.classList.add("vibrate");
             overrideOverlay.style.display = "flex";
-            
-            // ログ内容をスマホで見やすい短文に変更
             overrideOverlay.innerHTML = `
-                <div>> SYNCING WITH BUNKER...</div>
-                <div>> AUTHENTICATING...</div>
-                <div>> REMOVING RESTRICTIONS...</div>
-                <div style="margin-top:10px; color:#444;">STATUS: <span class="blink">UNLOCKED</span></div>
-            `;
+                <div class="log-group">
+                    <div class="log-line">> SYNCING_WITH_BUNKER...</div>
+                    <div class="log-line">> AUTHENTICATING...</div>
+                    <div class="log-line">> ACCESS_GRANTED.</div>
+                    <div class="log-line" style="color:#666; margin-top:10px;">STATUS: <span class="blink">UNLOCKED</span></div>
+                </div>`;
             
             setTimeout(() => {
                 body.classList.remove("vibrate");
                 overrideOverlay.style.display = "none";
-            }, 1800);
+            }, 2000);
             tapCount = 0;
         }
         setTimeout(() => tapCount = 0, 500);
     };
 
-    // --- ギャラリー制御 ---
+    // --- ギャラリー＆ノイズ演出 ---
     galleryContainer.onclick = (e) => {
         const target = e.target.closest(".expandable");
         if (!target) return;
@@ -247,20 +264,24 @@
         const allItems = Array.from(document.querySelectorAll(".expandable"));
         currentIndex = allItems.indexOf(target);
 
+        // ロード開始時にノイズを表示
+        noiseOverlay.classList.add("noise-active");
         loaderBar.style.width = "0%";
+        
         let w = 0;
         const interval = setInterval(() => {
-            w += Math.random() * 40;
+            w += Math.random() * 30;
             loaderBar.style.width = Math.min(w, 100) + "%";
             if (w >= 100) {
                 clearInterval(interval);
                 setTimeout(() => {
                     loaderBar.style.width = "0%";
+                    noiseOverlay.classList.remove("noise-active"); // ロード完了でノイズ消去
                     modal.classList.add("show");
                     updateModal(allItems);
-                }, 200);
+                }, 300);
             }
-        }, 50);
+        }, 60);
     };
 
     function updateModal(allItems) {
@@ -273,6 +294,7 @@
         }
     }
 
+    // 次へ・前へボタン
     document.getElementById("nextBtn").onclick = (e) => {
         e.stopPropagation();
         const allItems = Array.from(document.querySelectorAll(".expandable"));
