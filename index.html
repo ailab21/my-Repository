@@ -233,27 +233,42 @@
     document.addEventListener("touchend", () => scanner.classList.remove("active"));
 
     // --- 解除演出（スマホ対応版） ---
+    // --- 解除演出（再修正版：2回目以降も確実に表示） ---
     document.getElementById("galleryTitle").onclick = () => {
         tapCount++;
         if (tapCount === 3) {
             adminMode = true;
-            body.classList.add("vibrate");
+            
+            // 状態をリセットして表示
+            overrideOverlay.innerHTML = ""; // 一旦空にする
             overrideOverlay.style.display = "flex";
-            overrideOverlay.innerHTML = `
+            body.classList.add("vibrate");
+
+            // ログ内容を再注入（毎回新しく生成する）
+            const logContent = `
                 <div class="log-group">
                     <div class="log-line">> SYNCING_WITH_BUNKER...</div>
                     <div class="log-line">> AUTHENTICATING...</div>
                     <div class="log-line">> ACCESS_GRANTED.</div>
-                    <div class="log-line" style="color:#666; margin-top:10px;">STATUS: <span class="blink">UNLOCKED</span></div>
+                    <div class="log-line" style="color:#666; margin-top:10px;">
+                        STATUS: <span class="blink">UNLOCKED</span>
+                    </div>
                 </div>`;
             
+            overrideOverlay.innerHTML = logContent;
+            
+            // 2秒後に非表示にする処理
             setTimeout(() => {
                 body.classList.remove("vibrate");
                 overrideOverlay.style.display = "none";
+                // 次回のためにカウントをリセット
+                tapCount = 0;
             }, 2000);
-            tapCount = 0;
         }
-        setTimeout(() => tapCount = 0, 500);
+        
+        // 3連タップに失敗した場合は500msでカウントリセット
+        if (this.timeout) clearTimeout(this.timeout);
+        this.timeout = setTimeout(() => tapCount = 0, 500);
     };
 
     // --- ギャラリー＆ノイズ演出 ---
