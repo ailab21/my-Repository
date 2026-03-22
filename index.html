@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Secret Gallery</title>
+    <title>Secret Gallery - YoRHa OS</title>
 
     <script>
         const password = "2037";
-        let input = prompt("4桁の数字パスワードを入力してください");
+        let input = prompt("PASSWORD REQUIRED");
         if (input !== password) {
             alert("ACCESS DENIED");
             location.href = "https://www.pixiv.net/dashboard/works";
@@ -16,48 +16,58 @@
 
     <style>
         :root {
-            --neon: #7FFF00;
-            --cyber-blue: #00ffff;
-            --error-red: #ff003c;
+            /* NieR:Automata カラーパレット */
+            --nier-beige: #bab5a1;
+            --nier-dark: #353530;
+            --nier-accent: #8e8a78;
+            --nier-white: #e6e5d8;
             --mx: 50%;
             --my: 50%;
         }
 
         body {
-            margin: 0; padding: 0; background-color: #0d0d0d; color: #fff;
-            font-family: 'Courier New', monospace; overflow-x: hidden;
+            margin: 0; padding: 0; 
+            background-color: var(--nier-dark); 
+            color: var(--nier-beige);
+            font-family: 'Courier New', monospace; 
+            overflow-x: hidden;
+            letter-spacing: 0.05em;
         }
 
-        /* 1. スキャンライン & グリッド背景 */
+        /* 背景：薄い走査線（常に表示） */
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
-                linear-gradient(90deg, rgba(127, 255, 0, 0.03) 1px, transparent 1px),
-                linear-gradient(rgba(127, 255, 0, 0.03) 1px, transparent 1px);
-            background-size: 100% 4px, 30px 30px, 30px 30px;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 2px;
             pointer-events: none; z-index: 100;
+            opacity: 0.4;
         }
 
         h1 {
-            background: rgba(0,0,0,0.9); color: var(--neon); padding: 20px;
-            margin: 0; border-bottom: 2px solid var(--neon); font-size: 1.5rem;
-            text-shadow: 0 0 10px var(--neon); position: sticky; top: 0; z-index: 500;
+            background: var(--nier-beige); color: var(--nier-dark);
+            padding: 15px; margin: 0; 
+            font-size: 1.1rem; font-weight: normal;
             text-align: center; cursor: pointer; user-select: none;
+            border-bottom: 4px solid var(--nier-accent);
+            position: sticky; top: 0; z-index: 500;
+            text-transform: uppercase;
         }
 
         .gallery {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px; padding: 15px;
+            gap: 12px; padding: 20px;
         }
 
         .expandable {
             width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border: 1px solid rgba(127, 255, 0, 0.3); border-radius: 2px;
+            border: 1px solid var(--nier-beige);
+            filter: sepia(0.3) contrast(1.1);
             -webkit-touch-callout: none;
+            transition: opacity 0.2s;
         }
+        .expandable:active { opacity: 0.7; }
 
-        /* --- 指追従スキャン演出 --- */
+        /* --- 指追従スキャン演出（NieRスタイル） --- */
         #scanner-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 1000; opacity: 0;
@@ -67,63 +77,66 @@
 
         #scanner-overlay::before { /* 縦線 */
             content: ""; position: absolute; top: 0; left: var(--mx);
-            width: 1px; height: 100%; background: var(--neon);
-            box-shadow: 0 0 8px var(--neon);
+            width: 0.5px; height: 100%; background: var(--nier-beige);
         }
         #scanner-overlay::after { /* 横線 */
             content: ""; position: absolute; top: var(--my); left: 0;
-            width: 100%; height: 1px; background: var(--neon);
-            box-shadow: 0 0 8px var(--neon);
+            width: 100%; height: 1px; background: var(--nier-beige);
         }
 
         .scan-data {
             position: absolute; top: calc(var(--my) + 15px); left: calc(var(--mx) + 15px);
-            color: var(--cyber-blue); font-size: 0.6rem; line-height: 1.2;
-            text-shadow: 0 0 5px var(--cyber-blue);
+            color: var(--nier-white); font-size: 0.5rem; line-height: 1.4;
+            background: rgba(53, 53, 48, 0.7); padding: 4px;
+            border-left: 2px solid var(--nier-beige);
         }
 
-        /* 2. プログレスバー */
+        /* プログレスバー（NieR風） */
         #loading-bar {
-            position: fixed; bottom: 0; left: 0; height: 3px;
-            background: var(--cyber-blue); width: 0%; z-index: 10005;
-            box-shadow: 0 0 10px var(--cyber-blue);
+            position: fixed; bottom: 0; left: 0; height: 2px;
+            background: var(--nier-white); width: 0%; z-index: 10005;
         }
 
-        /* 4. 視覚的振動（グリッチ） */
-        .glitch-vibrate {
-            animation: v-shake 0.1s linear infinite;
-            filter: hue-rotate(90deg) contrast(1.5);
+        /* 3タップ解除時のOSオーバーレイ */
+        #override-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--nier-beige); display: none; z-index: 30000;
+            flex-direction: column; align-items: flex-start; justify-content: center;
+            color: var(--nier-dark); padding: 10%;
+            box-sizing: border-box; font-size: 0.9rem; line-height: 1.6;
         }
-        @keyframes v-shake {
-            0% { transform: translate(3px, 2px); }
-            50% { transform: translate(-3px, -2px); }
-            100% { transform: translate(0); }
-        }
+
+        .log-line::before { content: "> "; }
+        .blink { animation: blink-anim 0.5s infinite; }
+        @keyframes blink-anim { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
         /* モーダル */
         .modal {
             display: none; position: fixed; z-index: 10000;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); align-items: center; justify-content: center;
+            background: rgba(53, 53, 48, 0.98); align-items: center; justify-content: center;
         }
-        .modal-content { max-width: 90vw; max-height: 80vh; transition: 0.3s; }
+        .modal-content { 
+            max-width: 90vw; max-height: 80vh; 
+            border: 1px solid var(--nier-beige);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
         
         .nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
-            color: var(--neon); font-size: 40px; padding: 20px; z-index: 10010;
+            color: var(--nier-beige); font-size: 30px; padding: 20px; z-index: 10010;
         }
         .prev { left: 0; } .next { right: 0; }
 
-        /* 3タップ解除時のオーバーレイ */
-        #override-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; z-index: 30000;
-            flex-direction: column; align-items: center; justify-content: center;
-            color: var(--cyber-blue); font-weight: bold; font-size: 1.2rem;
-            text-shadow: 0 0 10px var(--cyber-blue);
-        }
-
         .show { display: flex !important; }
+        
+        /* 振動演出 */
+        .vibrate { animation: vibrate-anim 0.1s linear infinite; }
+        @keyframes vibrate-anim {
+            0% { transform: translate(2px, 2px); }
+            50% { transform: translate(-2px, -2px); }
+            100% { transform: translate(0); }
+        }
     </style>
 </head>
 <body id="mainBody">
@@ -132,53 +145,22 @@
     <div class="scan-data" id="scan-data"></div>
 </div>
 <div id="loading-bar"></div>
-<div id="override-overlay">CRACKING SYSTEM...</div>
+<div id="override-overlay"></div>
 
-<h1 id="galleryTitle">SECRET_GALLERY_OS</h1>
+<h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
 
 <div class="gallery" id="galleryContainer">
-    <!-- 画像・動画リスト -->
-    <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
-    <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
-    <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
-    <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
-    <img src="thumb_20260316005.jpg" data-full="20260316005.png" alt="作品5" class="expandable" loading="lazy">
-    <img src="thumb_20260316006.jpg" data-full="20260316006.png" alt="作品6" class="expandable" loading="lazy">
-    <img src="thumb_20260316007.jpg" data-full="20260316007.png" alt="作品7" class="expandable" loading="lazy">
-    <img src="thumb_20260316008.jpg" data-full="20260316008.png" alt="作品8" class="expandable" loading="lazy">
-    <img src="thumb_20260316009.jpg" data-full="20260316009.png" alt="作品9" class="expandable" loading="lazy">
-    <img src="thumb_20260316010.jpg" data-full="20260316010.png" alt="作品10" class="expandable" loading="lazy">
-    <img src="thumb_20260316011.jpg" data-full="20260316011.png" alt="作品11" class="expandable" loading="lazy">
-    <img src="thumb_20260316012.jpg" data-full="20260316012.png" alt="作品12" class="expandable" loading="lazy">
-    <img src="thumb_20260316013.jpg" data-full="20260316013.png" alt="作品13" class="expandable" loading="lazy">
-    <img src="thumb_20260316014.jpg" data-full="20260316014.png" alt="作品14" class="expandable" loading="lazy">
-    <img src="thumb_20260316015.jpg" data-full="20260316015.png" alt="作品15" class="expandable" loading="lazy">
-    <img src="thumb_20260316016.jpg" data-full="20260316016.png" alt="作品16" class="expandable" loading="lazy">
-    <img src="thumb_20260316017.jpg" data-full="20260316017.png" alt="作品17" class="expandable" loading="lazy">
-    <img src="thumb_20260316018.jpg" data-full="20260316018.png" alt="作品18" class="expandable" loading="lazy">
-    <img src="thumb_20260316019.jpg" data-full="20260316019.png" alt="作品19" class="expandable" loading="lazy">
-    <img src="thumb_20260316020.jpg" data-full="20260316020.png" alt="作品20" class="expandable" loading="lazy">
-    <img src="thumb_20260316021.jpg" data-full="20260316021.png" alt="作品21" class="expandable" loading="lazy">
-    <img src="thumb_20260316022.jpg" data-full="20260316022.png" alt="作品22" class="expandable" loading="lazy">
-    <img src="thumb_20260316023.jpg" data-full="20260316023.png" alt="作品23" class="expandable" loading="lazy">
-    <img src="thumb_20260316024.jpg" data-full="20260316024.png" alt="作品24" class="expandable" loading="lazy">
-    
-    <video src="20260316001move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316002move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316003move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316004move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316005move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316006move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316007move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316008move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316009move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
-    <video src="20260316010move.mp4#t=0.1" class="expandable" muted loading="lazy" preload="metadata"></video>
+    <!-- ここに画像/動画を配置 -->
+    <img src="thumb_20260316001.jpg" data-full="20260316001.png" class="expandable" alt="DATA_01">
+    <img src="thumb_20260316002.jpg" data-full="20260316002.png" class="expandable" alt="DATA_02">
+    <video src="20260316001move.mp4#t=0.1" class="expandable" muted playsinline></video>
+    <!-- ...他の要素... -->
 </div>
 
 <div id="modal" class="modal">
-    <span class="nav-btn prev" id="prevBtn">◂</span>
+    <span class="nav-btn prev" id="prevBtn">◁</span>
     <div id="modal-content-wrapper" style="display:contents;"></div>
-    <span class="nav-btn next" id="nextBtn">▸</span>
+    <span class="nav-btn next" id="nextBtn">▷</span>
 </div>
 
 <script>
@@ -189,23 +171,23 @@
     const body = document.getElementById("mainBody");
     const scanner = document.getElementById("scanner-overlay");
     const scanData = document.getElementById("scan-data");
+    const overrideOverlay = document.getElementById("override-overlay");
     
     let adminMode = false;
     let tapCount = 0;
 
-    // --- 1. 指追従スキャン演出 ---
+    // --- 1. NieR風スキャン演出 ---
     const updateScanner = (e) => {
         const x = e.touches[0].clientX;
         const y = e.touches[0].clientY;
         const px = (x / window.innerWidth) * 100;
         const py = (y / window.innerHeight) * 100;
-        
         document.documentElement.style.setProperty('--mx', px + '%');
         document.documentElement.style.setProperty('--my', py + '%');
         
         const hexX = Math.round(x).toString(16).toUpperCase();
         const hexY = Math.round(y).toString(16).toUpperCase();
-        scanData.innerHTML = `SCAN_X: 0x${hexX}<br>SCAN_Y: 0x${hexY}<br>STATUS: ACTIVE`;
+        scanData.innerHTML = `LOC_ID: 0x${hexX}${hexY}<br>TYPE: ARCHIVE_DATA<br>ANALYZING...`;
     };
 
     document.addEventListener("touchstart", (e) => {
@@ -216,51 +198,51 @@
     }, { passive: false });
 
     document.addEventListener("touchmove", (e) => {
-        if (scanner.classList.contains("active")) {
-            updateScanner(e);
-        }
+        if (scanner.classList.contains("active")) updateScanner(e);
     }, { passive: false });
 
-    document.addEventListener("touchend", () => {
-        scanner.classList.remove("active");
-    });
+    document.addEventListener("touchend", () => scanner.classList.remove("active"));
 
-    // --- 2. 3タップでノイズ演出＆解除 ---
+    // --- 2. 解除演出（バンカー同期風） ---
     document.getElementById("galleryTitle").onclick = (e) => {
         e.stopPropagation();
         tapCount++;
         if (tapCount === 3) {
             adminMode = true;
-            triggerGlitch();
+            runNierOverride();
             tapCount = 0;
         }
         setTimeout(() => tapCount = 0, 500);
     };
 
-    function triggerGlitch() {
-        body.classList.add("glitch-vibrate");
-        const overlay = document.getElementById("override-overlay");
-        overlay.style.display = "flex";
+    function runNierOverride() {
+        body.classList.add("vibrate");
+        overrideOverlay.style.display = "flex";
+        overrideOverlay.innerHTML = `
+            <div class="log-line">Initializing system override...</div>
+            <div class="log-line">Bypassing YoRHa security protocols...</div>
+            <div class="log-line">Synchronizing with Bunker... DONE</div>
+            <div class="log-line">All restrictions lifted. <span class="blink">■</span></div>
+        `;
         
-        // 1.5秒後に確実に演出を終了させる
         setTimeout(() => {
-            body.classList.remove("glitch-vibrate");
-            overlay.style.display = "none";
+            body.classList.remove("vibrate");
+            overrideOverlay.style.display = "none";
         }, 1500);
     }
 
-    // --- 3. プログレスバー演出 ---
+    // --- 3. ロード演出 ---
     function startLoading() {
         loaderBar.style.width = "0%";
         let w = 0;
         const interval = setInterval(() => {
-            w += Math.random() * 40;
-            loaderBar.style.width = w + "%";
+            w += Math.random() * 30;
+            loaderBar.style.width = Math.min(w, 100) + "%";
             if (w >= 100) {
                 clearInterval(interval);
                 setTimeout(() => loaderBar.style.width = "0%", 200);
             }
-        }, 40);
+        }, 50);
     }
 
     // ギャラリー基本機能
@@ -272,7 +254,7 @@
             setTimeout(() => {
                 modal.classList.add("show");
                 updateModal(index);
-            }, 500); // 演出時間は少し短縮して快適に
+            }, 400);
         };
     });
 
