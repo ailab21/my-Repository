@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Secret Gallery - YoRHa OS</title>
+    <title>Secret Gallery - Ai_lab OS</title>
 
     <script>
         const password = "2037";
@@ -82,12 +82,29 @@
 
         #loading-bar { position: fixed; bottom: 0; left: 0; height: 2px; background: var(--nier-white); width: 0%; z-index: 10005; }
 
+        /* --- 修正ポイント：解除演出オーバーレイ --- */
         #override-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--nier-beige); display: none; z-index: 30000;
-            flex-direction: column; align-items: flex-start; justify-content: center;
-            color: var(--nier-dark); padding: 10%;
-            box-sizing: border-box; font-size: 0.9rem;
+            background: var(--nier-beige); 
+            display: none; 
+            z-index: 30000;
+            flex-direction: column; 
+            align-items: flex-start; /* 左揃え */
+            justify-content: center; /* 画面中央に配置 */
+            color: var(--nier-dark); 
+            padding: 0 15%; /* 左右にマージンを持たせて中央寄せに見せる */
+            box-sizing: border-box; 
+            font-size: 1rem;
+            line-height: 2;
+            font-weight: bold;
+        }
+
+        /* スマホ向けの微調整 */
+        @media (max-width: 600px) {
+            #override-overlay {
+                font-size: 0.8rem; /* 文字を少し小さく */
+                padding: 0 10%;    /* 余白を少し狭く */
+            }
         }
 
         .modal {
@@ -101,6 +118,9 @@
         .show { display: flex !important; }
         .vibrate { animation: vibrate-anim 0.1s linear infinite; }
         @keyframes vibrate-anim { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0); } }
+        
+        .blink { animation: blink-anim 0.4s infinite; }
+        @keyframes blink-anim { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     </style>
 </head>
 <body id="mainBody">
@@ -111,8 +131,8 @@
 
 <h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
 
-<!-- ここに画像や動画を好きなだけ追加してください -->
 <div class="gallery" id="galleryContainer">
+    <!-- 画像・動画リスト（省略せずにそのままお使いください） -->
     <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -178,7 +198,7 @@
         const py = (touch.clientY / window.innerHeight) * 100;
         document.documentElement.style.setProperty('--mx', px + '%');
         document.documentElement.style.setProperty('--my', py + '%');
-        scanData.innerHTML = `LOC_ID: 0x${Math.round(touch.clientX).toString(16)}<br>ANALYZING ARCHIVE...`;
+        scanData.innerHTML = `LOC_ID: 0x${Math.round(touch.clientX).toString(16).toUpperCase()}<br>ANALYZING ARCHIVE...`;
     };
 
     document.addEventListener("touchstart", (e) => {
@@ -194,33 +214,39 @@
 
     document.addEventListener("touchend", () => scanner.classList.remove("active"));
 
-    // --- 演出：タイトル3タップ解除 ---
+    // --- 演出：タイトル3タップ解除（修正済） ---
     document.getElementById("galleryTitle").onclick = (e) => {
         tapCount++;
         if (tapCount === 3) {
             adminMode = true;
             body.classList.add("vibrate");
             overrideOverlay.style.display = "flex";
-            overrideOverlay.innerHTML = `> SYNCING WITH BUNKER...<br>> REMOVING RESTRICTIONS...<br>> SUCCESS.`;
+            
+            // ログ内容をスマホで見やすい短文に変更
+            overrideOverlay.innerHTML = `
+                <div>> SYNCING WITH BUNKER...</div>
+                <div>> AUTHENTICATING...</div>
+                <div>> REMOVING RESTRICTIONS...</div>
+                <div style="margin-top:10px; color:#444;">STATUS: <span class="blink">UNLOCKED</span></div>
+            `;
+            
             setTimeout(() => {
                 body.classList.remove("vibrate");
                 overrideOverlay.style.display = "none";
-            }, 1500);
+            }, 1800);
             tapCount = 0;
         }
         setTimeout(() => tapCount = 0, 500);
     };
 
-    // --- ギャラリー制御（イベントデリゲーション形式） ---
+    // --- ギャラリー制御 ---
     galleryContainer.onclick = (e) => {
         const target = e.target.closest(".expandable");
         if (!target) return;
 
-        // 全体の何番目かを取得
         const allItems = Array.from(document.querySelectorAll(".expandable"));
         currentIndex = allItems.indexOf(target);
 
-        // ロード演出
         loaderBar.style.width = "0%";
         let w = 0;
         const interval = setInterval(() => {
@@ -248,12 +274,14 @@
     }
 
     document.getElementById("nextBtn").onclick = (e) => {
+        e.stopPropagation();
         const allItems = Array.from(document.querySelectorAll(".expandable"));
         currentIndex = (currentIndex + 1) % allItems.length;
         updateModal(allItems);
     };
 
     document.getElementById("prevBtn").onclick = (e) => {
+        e.stopPropagation();
         const allItems = Array.from(document.querySelectorAll(".expandable"));
         currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
         updateModal(allItems);
