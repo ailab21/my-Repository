@@ -28,35 +28,59 @@
 
         body {
             margin: 0; padding: 0; 
-            background-color: #2a2a25; /* 少し深く暗い色に */
+            background-color: #2a2a25; 
             color: var(--nier-beige);
             font-family: 'Courier New', monospace; 
             overflow-x: hidden;
             letter-spacing: 0.05em;
         }
 
-        /* --- ガラスの反射・質感レイヤー（最前面） --- */
+        /* --- 起動ログ画面の修正 (位置を上に) --- */
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--nier-dark); color: var(--nier-beige);
+            z-index: 50000; display: none; 
+            flex-direction: column; 
+            /* 下揃えから中央揃えに変更 */
+            justify-content: center; 
+            align-items: center;
+            padding: 20px; box-sizing: border-box;
+            overflow: hidden; font-size: 0.85rem;
+            transition: opacity 0.8s;
+        }
+
+        /* ログのコンテナ：幅を制限して中央に寄せる */
+        #boot-log-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: left;
+            /* 少しだけ画面上寄りに配置 */
+            margin-top: -10vh; 
+        }
+
+        .boot-log { 
+            animation: slide-up 0.1s forwards; 
+            margin-bottom: 4px; 
+            opacity: 0.9;
+            border-left: 2px solid var(--nier-accent);
+            padding-left: 10px;
+        }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 0.9; } }
+
+        /* --- ガラスの質感レイヤー --- */
         .glass-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: 
                 linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%, rgba(255,255,255,0.02) 100%),
-                radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,0.3) 100%);
+                radial-gradient(circle at 50% 50%, transparent 65%, rgba(0,0,0,0.4) 100%);
             pointer-events: none; z-index: 2000;
         }
 
-        /* 常に表示される走査線（中層） */
         .scanlines {
-            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
             background-size: 100% 2px;
             pointer-events: none; z-index: 100; opacity: 0.4;
-        }
-
-        /* --- 視差レイヤー構造 --- */
-        #content-wrapper {
-            position: relative;
-            z-index: 10;
-            will-change: transform;
         }
 
         h1 {
@@ -64,59 +88,47 @@
             padding: 15px; margin: 0; font-size: 1.1rem; text-align: center;
             cursor: pointer; user-select: none; border-bottom: 4px solid var(--nier-accent);
             position: sticky; top: 0; z-index: 500; text-transform: uppercase;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
         .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 12px; padding: 20px;
-            transform-style: preserve-3d;
-            perspective: 1000px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 12px; padding: 20px; 
         }
 
         .expandable { 
             width: 100%; aspect-ratio: 1/1; object-fit: cover; 
             border: 1px solid rgba(186, 181, 161, 0.4); 
-            filter: sepia(0.3) contrast(1.1) brightness(0.9); 
+            filter: sepia(0.3) brightness(0.8); 
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
         }
 
-        .expandable:hover {
-            filter: sepia(0) contrast(1.2) brightness(1);
-            transform: translateZ(20px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
-        }
-
-        /* モーダル・起動演出等は維持 */
-        #boot-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--nier-dark); color: var(--nier-beige); z-index: 50000; display: none; flex-direction: column; justify-content: flex-end; padding: 20px; box-sizing: border-box; overflow: hidden; font-size: 0.8rem; }
-        .boot-log { animation: slide-up 0.1s forwards; margin-bottom: 2px; }
-        @keyframes slide-up { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 0.8; } }
+        /* モーダル関連 */
+        .modal { display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30,30,25,0.98); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { max-width: 90vw; max-height: 80vh; border: 1px solid var(--nier-beige); }
+        #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; pointer-events: none; z-index: 20000; mix-blend-mode: overlay; }
+        .noise-active { opacity: 0.12 !important; }
         
         #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1500; opacity: 0; transition: opacity 0.2s; }
         #scanner-overlay.active { opacity: 1; }
-        #scanner-overlay::before { content: ""; position: absolute; top: 0; left: var(--mx); width: 0.5px; height: 100%; background: var(--nier-beige); }
-        #scanner-overlay::after { content: ""; position: absolute; top: var(--my); left: 0; width: 100%; height: 1px; background: var(--nier-beige); }
-
-        .modal { display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 30, 25, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { max-width: 90vw; max-height: 80vh; border: 1px solid var(--nier-beige); box-shadow: 0 0 50px rgba(0,0,0,1); }
-        #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; pointer-events: none; z-index: 20000; mix-blend-mode: overlay; }
-        .noise-active { opacity: 0.1 !important; }
-        #loading-bar { position: fixed; bottom: 0; left: 0; height: 2px; background: var(--nier-white); width: 0%; z-index: 10005; }
+        #scanner-overlay::before { content: ""; position: absolute; top: 0; left: var(--mx); width: 1px; height: 100%; background: var(--nier-beige); }
+        #scanner-overlay::after { content: ""; position: absolute; top: var(--my); left: 0; width: 1px; height: 100%; background: var(--nier-beige); }
     </style>
 </head>
-<body id="mainBody">
+<body>
 
-<div id="boot-screen"></div>
+<!-- 起動画面（ログの位置を調整済み） -->
+<div id="boot-screen">
+    <div id="boot-log-container"></div>
+</div>
+
 <div class="glass-overlay"></div>
 <div class="scanlines"></div>
 
 <div id="content-wrapper">
     <h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
     <div class="gallery" id="galleryContainer">
-        <!-- 画像ループ（既存のimg/videoタグをここに） -->
         <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
@@ -156,57 +168,57 @@
     </div>
 </div>
 
-<div id="scanner-overlay"><div class="scan-data" id="scan-data"></div></div>
-<div id="loading-bar"></div>
+<div id="scanner-overlay"></div>
 <div id="noise-overlay"></div>
-
-<div id="modal" class="modal">
-    <div id="modal-content-wrapper" style="display:contents;"></div>
-</div>
+<div id="modal" class="modal"><div id="modal-content-wrapper" style="display:contents;"></div></div>
 
 <script>
-    const wrapper = document.getElementById("content-wrapper");
-    const title = document.getElementById("galleryTitle");
-
-    // --- 1. スクロール連動擬似パララックス ---
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        // 背景とコンテンツをわずかにずらして奥行きを出す
-        // タイトルは固定、ギャラリーは標準、背景(走査線)は固定
-        // ここではギャラリー内のアイテムに微細な視差を与えます
-        const items = document.querySelectorAll('.expandable');
-        items.forEach((item, index) => {
-            const speed = 0.05;
-            const yPos = -(scrolled * speed);
-            // 偶数・奇数で動きを少し変えるとより立体的
-            const shift = index % 2 === 0 ? yPos : -yPos;
-            item.style.transform = `translateY(${shift * 0.2}px)`;
-        });
-    });
-
-    // --- 2. 起動演出 ---
+    // --- 1. 起動ログ演出（位置：中央より少し上） ---
     window.addEventListener('DOMContentLoaded', () => {
         const bootScreen = document.getElementById("boot-screen");
+        const logContainer = document.getElementById("boot-log-container");
         bootScreen.style.display = "flex";
-        const logs = ["ARCHIVE_ACCESS_START", "DECRYPTING...", `USER_ID: ${userID.toUpperCase()}`, "SUCCESS."];
+
+        const logs = [
+            "CONNECTING TO NETWORK...",
+            "LOGIN ATTEMPT: OK",
+            `USER_ID: ${userID.toUpperCase()}`,
+            "FETCHING ARCHIVE DATA...",
+            "DECRYPTING SECTORS [3, 9, 21]...",
+            "MEMORY_CHECK: 100%",
+            "UI_RENDER_START...",
+            "SYSTEM_READY."
+        ];
+
         let i = 0;
         const interval = setInterval(() => {
             if (i < logs.length) {
                 const div = document.createElement("div");
-                div.className = "boot-log"; div.innerText = `> ${logs[i]}`;
-                bootScreen.appendChild(div); i++;
+                div.className = "boot-log";
+                div.innerText = `> ${logs[i]}`;
+                logContainer.appendChild(div);
+                i++;
             } else {
                 clearInterval(interval);
                 setTimeout(() => {
                     bootScreen.style.opacity = "0";
-                    bootScreen.style.transition = "opacity 0.8s";
                     setTimeout(() => bootScreen.style.display = "none", 800);
-                }, 800);
+                }, 1000);
             }
-        }, 150);
+        }, 1200 / logs.length); // ログの数に合わせて速度調整
     });
 
-    // --- 3. スキャナー & モーダル機能 (既存) ---
+    // --- 2. スクロール連動擬似パララックス ---
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const items = document.querySelectorAll('.expandable');
+        items.forEach((item, index) => {
+            const speed = (index % 3 === 0) ? 0.03 : 0.015;
+            item.style.transform = `translateY(${scrolled * speed}px)`;
+        });
+    });
+
+    // --- 3. スキャナー & モーダル ---
     const updateScanner = (e) => {
         const touch = e.touches ? e.touches[0] : e;
         document.documentElement.style.setProperty('--mx', (touch.clientX / window.innerWidth) * 100 + '%');
