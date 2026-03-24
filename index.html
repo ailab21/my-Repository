@@ -155,6 +155,23 @@
             }
         }, 250);
     });
+function updateNixieClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+
+    document.getElementById('h1').innerText = h[0];
+    document.getElementById('h2').innerText = h[1];
+    document.getElementById('m1').innerText = m[0];
+    document.getElementById('m2').innerText = m[1];
+    document.getElementById('s1').innerText = s[0];
+    document.getElementById('s2').innerText = s[1];
+}
+
+// 1秒ごとに更新
+setInterval(updateNixieClock, 1000);
+updateNixieClock(); // 初回実行
 
     // --- 2. ギャラリー & モーダル制御 ---
     const modal = document.getElementById("modal");
