@@ -128,6 +128,16 @@
 
 <div id="scanner-overlay"></div>
 <div id="noise-overlay"></div>
+<div id="nixie-clock">
+    <div class="nixie-digit" id="h1">0</div>
+    <div class="nixie-digit" id="h2">0</div>
+    <div class="nixie-sep">:</div>
+    <div class="nixie-digit" id="m1">0</div>
+    <div class="nixie-digit" id="m2">0</div>
+    <div class="nixie-sep">:</div>
+    <div class="nixie-digit" id="s1">0</div>
+    <div class="nixie-digit" id="s2">0</div>
+</div>
 
 <!-- モーダル構造（矢印を追加） -->
 <div id="modal" class="modal">
@@ -155,6 +165,23 @@
             }
         }, 250);
     });
+function updateNixieClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+
+    document.getElementById('h1').innerText = h[0];
+    document.getElementById('h2').innerText = h[1];
+    document.getElementById('m1').innerText = m[0];
+    document.getElementById('m2').innerText = m[1];
+    document.getElementById('s1').innerText = s[0];
+    document.getElementById('s2').innerText = s[1];
+}
+
+// 1秒ごとに更新
+setInterval(updateNixieClock, 1000);
+updateNixieClock(); // 初回実行
 function updateNixieClock() {
     const now = new Date();
     const h = String(now.getHours()).padStart(2, '0');
