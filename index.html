@@ -24,6 +24,7 @@
             --nier-accent: #8e8a78;
             --nier-white: #e6e5d8;
             --mx: 50%; --my: 50%;
+            --nixie-amber: #ffaa33;
         }
 
         body {
@@ -35,7 +36,7 @@
             letter-spacing: 0.05em;
         }
 
-        /* --- 起動ログ画面 (中央やや上) --- */
+        /* --- 起動ログ画面 --- */
         #boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--nier-dark); color: var(--nier-beige);
@@ -47,7 +48,32 @@
         .boot-log { animation: slide-up 0.1s forwards; margin-bottom: 4px; opacity: 0.9; border-left: 2px solid var(--nier-accent); padding-left: 10px; }
         @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 0.9; } }
 
-        /* --- ガラスの質感レイヤー --- */
+        /* --- ニキシー管時計 --- */
+        #nixie-clock {
+            position: fixed; top: 15px; right: 15px;
+            display: flex; gap: 5px; z-index: 3000;
+            background: rgba(0, 0, 0, 0.4); padding: 8px 12px;
+            border: 1px solid rgba(186, 181, 161, 0.2);
+            backdrop-filter: blur(4px); border-radius: 4px;
+            pointer-events: none;
+        }
+        .nixie-digit {
+            font-size: 1.4rem; font-weight: bold; color: var(--nixie-amber);
+            text-shadow: 0 0 8px #ff5500, 0 0 15px var(--nixie-amber);
+            position: relative; width: 18px; text-align: center;
+        }
+        /* 背後に薄く「8」を表示してフィラメント感を出す */
+        .nixie-digit::before {
+            content: "8"; position: absolute; top: 0; left: 0;
+            color: rgba(255, 100, 0, 0.04); z-index: -1;
+        }
+        .nixie-sep {
+            font-size: 1.2rem; color: var(--nixie-amber); opacity: 0.6;
+            animation: blink-sep 1s infinite;
+        }
+        @keyframes blink-sep { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.2; } }
+
+        /* --- ガラス・走査線演出 --- */
         .glass-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%, rgba(255,255,255,0.02) 100%), radial-gradient(circle at 50% 50%, transparent 65%, rgba(0,0,0,0.4) 100%); pointer-events: none; z-index: 2000; }
         .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 2px; pointer-events: none; z-index: 100; opacity: 0.4; }
 
@@ -55,39 +81,42 @@
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 20px; }
         .expandable { width: 100%; aspect-ratio: 1/1; object-fit: cover; border: 1px solid rgba(186, 181, 161, 0.4); filter: sepia(0.3) brightness(0.8); cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: transform 0.2s; }
 
-        /* --- モーダル & ナビゲーション矢印 --- */
+        /* --- モーダル & ナビゲーション --- */
         .modal { display: none; position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30,30,25,0.98); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-content { max-width: 90vw; max-height: 80vh; border: 1px solid var(--nier-beige); box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        
-        .nav-btn {
-            position: absolute; top: 50%; transform: translateY(-50%);
-            color: var(--nier-beige); font-size: 40px; padding: 20px;
-            z-index: 10010; cursor: pointer; user-select: none;
-            text-shadow: 0 0 10px rgba(186, 181, 161, 0.5);
-            transition: opacity 0.3s;
-        }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); color: var(--nier-beige); font-size: 40px; padding: 20px; z-index: 10010; cursor: pointer; user-select: none; text-shadow: 0 0 10px rgba(186, 181, 161, 0.5); transition: opacity 0.3s; }
         .nav-btn:active { opacity: 0.5; }
 
         #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; pointer-events: none; z-index: 20000; mix-blend-mode: overlay; }
         .noise-active { opacity: 0.12 !important; }
-        
         #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1500; opacity: 0; transition: opacity 0.2s; }
         #scanner-overlay.active { opacity: 1; }
         #scanner-overlay::before { content: ""; position: absolute; top: 0; left: var(--mx); width: 1px; height: 100%; background: var(--nier-beige); }
-        #scanner-overlay::after { content: ""; position: absolute; top: var(--my); left: 0; width: 100%; height: 1px; background: var(--nier-beige); }
+        #scanner-overlay::after { content: ""; position: absolute; top: var(--my); left: 0; width: 1px; height: 100%; background: var(--nier-beige); }
     </style>
 </head>
 <body>
 
 <div id="boot-screen"><div id="boot-log-container"></div></div>
+
+<div id="nixie-clock">
+    <div class="nixie-digit" id="h1">0</div>
+    <div class="nixie-digit" id="h2">0</div>
+    <div class="nixie-sep">:</div>
+    <div class="nixie-digit" id="m1">0</div>
+    <div class="nixie-digit" id="m2">0</div>
+    <div class="nixie-sep">:</div>
+    <div class="nixie-digit" id="s1">0</div>
+    <div class="nixie-digit" id="s2">0</div>
+</div>
+
 <div class="glass-overlay"></div>
 <div class="scanlines"></div>
 
 <div id="content-wrapper">
     <h1 id="galleryTitle">SYSTEM_PORTAL_V3.02</h1>
     <div class="gallery" id="galleryContainer">
-        <!-- 画像/動画はここに追加 -->
-        <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
+         <img src="thumb_20260316001.jpg" data-full="20260316001.png" alt="作品1" class="expandable" loading="lazy">
     <img src="thumb_20260316002.jpg" data-full="20260316002.png" alt="作品2" class="expandable" loading="lazy">
     <img src="thumb_20260316003.jpg" data-full="20260316003.png" alt="作品3" class="expandable" loading="lazy">
     <img src="thumb_20260316004.jpg" data-full="20260316004.png" alt="作品4" class="expandable" loading="lazy">
@@ -128,18 +157,7 @@
 
 <div id="scanner-overlay"></div>
 <div id="noise-overlay"></div>
-<div id="nixie-clock">
-    <div class="nixie-digit" id="h1">0</div>
-    <div class="nixie-digit" id="h2">0</div>
-    <div class="nixie-sep">:</div>
-    <div class="nixie-digit" id="m1">0</div>
-    <div class="nixie-digit" id="m2">0</div>
-    <div class="nixie-sep">:</div>
-    <div class="nixie-digit" id="s1">0</div>
-    <div class="nixie-digit" id="s2">0</div>
-</div>
 
-<!-- モーダル構造（矢印を追加） -->
 <div id="modal" class="modal">
     <div class="nav-btn" id="prevBtn" style="left: 10px;">◁</div>
     <div id="modal-content-wrapper" style="display:contents;"></div>
@@ -147,12 +165,28 @@
 </div>
 
 <script>
-    // --- 1. 起動ログ演出 ---
+    // --- 時計更新ロジック ---
+    function updateNixieClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('h1').innerText = h[0];
+        document.getElementById('h2').innerText = h[1];
+        document.getElementById('m1').innerText = m[0];
+        document.getElementById('m2').innerText = m[1];
+        document.getElementById('s1').innerText = s[0];
+        document.getElementById('s2').innerText = s[1];
+    }
+    setInterval(updateNixieClock, 1000);
+    updateNixieClock();
+
+    // --- 起動ログ演出 ---
     window.addEventListener('DOMContentLoaded', () => {
         const bootScreen = document.getElementById("boot-screen");
         const logContainer = document.getElementById("boot-log-container");
         bootScreen.style.display = "flex";
-        const logs = ["BOOT_SEQUENCE_START", `USER: ${userID.toUpperCase()}`, "CONNECTING...", "SYNC_DATA...", "READY."];
+        const logs = ["BOOT_SEQUENCE_START", `USER_UNIT: ${userID.toUpperCase()}`, "TIME_SYNC... OK", "STABILIZING_VISUALS...", "READY."];
         let i = 0;
         const interval = setInterval(() => {
             if (i < logs.length) {
@@ -165,42 +199,8 @@
             }
         }, 250);
     });
-function updateNixieClock() {
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
 
-    document.getElementById('h1').innerText = h[0];
-    document.getElementById('h2').innerText = h[1];
-    document.getElementById('m1').innerText = m[0];
-    document.getElementById('m2').innerText = m[1];
-    document.getElementById('s1').innerText = s[0];
-    document.getElementById('s2').innerText = s[1];
-}
-
-// 1秒ごとに更新
-setInterval(updateNixieClock, 1000);
-updateNixieClock(); // 初回実行
-function updateNixieClock() {
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
-
-    document.getElementById('h1').innerText = h[0];
-    document.getElementById('h2').innerText = h[1];
-    document.getElementById('m1').innerText = m[0];
-    document.getElementById('m2').innerText = m[1];
-    document.getElementById('s1').innerText = s[0];
-    document.getElementById('s2').innerText = s[1];
-}
-
-// 1秒ごとに更新
-setInterval(updateNixieClock, 1000);
-updateNixieClock(); // 初回実行
-
-    // --- 2. ギャラリー & モーダル制御 ---
+    // --- ギャラリー・視差・モーダル ---
     const modal = document.getElementById("modal");
     const modalWrapper = document.getElementById("modal-content-wrapper");
     const noise = document.getElementById("noise-overlay");
@@ -215,7 +215,6 @@ updateNixieClock(); // 初回実行
             `<video src="${target.src}" class="modal-content" controls autoplay loop playsinline></video>`;
     };
 
-    // ギャラリークリック
     document.getElementById("galleryContainer").onclick = (e) => {
         const target = e.target.closest(".expandable");
         if (!target) return;
@@ -228,21 +227,10 @@ updateNixieClock(); // 初回実行
         }, 300);
     };
 
-    // 矢印ボタンの動作
-    document.getElementById("nextBtn").onclick = (e) => {
-        e.stopPropagation();
-        currentIndex = (currentIndex + 1) % galleryItems().length;
-        updateModalContent();
-    };
-    document.getElementById("prevBtn").onclick = (e) => {
-        e.stopPropagation();
-        currentIndex = (currentIndex - 1 + galleryItems().length) % galleryItems().length;
-        updateModalContent();
-    };
-
+    document.getElementById("nextBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex + 1) % galleryItems().length; updateModalContent(); };
+    document.getElementById("prevBtn").onclick = (e) => { e.stopPropagation(); currentIndex = (currentIndex - 1 + galleryItems().length) % galleryItems().length; updateModalContent(); };
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
 
-    // --- 3. スクロール視差 & スキャナー ---
     window.addEventListener('scroll', () => {
         const scrolled = window.pageYOffset;
         document.querySelectorAll('.expandable').forEach((item, index) => {
